@@ -3,14 +3,14 @@ from setuptools import setup
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setup(name='MyHelloWorldProject',
-      version='0.0.0',
-      description='YOUR DESCRIPTION',
+setup(name='ivc-circuit-detector',
+      version='0.0.1',
+      description='Detect circuit schema related to I-V curve',
       long_description=long_description,
       long_description_content_type="text/markdown",
-      url='https://github.com/EPC-MSU/URL_TO_YOUR_PROJECT',
+      url='https://github.com/EPC-MSU/ivc-circuit-detector',
       author='EPC MSU',
-      author_email='YOUR_EMAIL@physlab.ru',
+      author_email='marakulin_ap@physlab.ru',
       license='CC0-1.0',
       packages=['hello_world'],
       install_requires=[

@@ -1,1 +1,2 @@
-# put your requirements here
+git+https://github.com/EPC-MSU/EPCore
+git+https://github.com/EPC-MSU/MySpice
