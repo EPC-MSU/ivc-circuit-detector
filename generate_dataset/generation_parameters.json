@@ -1,0 +1,80 @@
+{
+  "name": "Dataset generation parameters settings file",
+  "version": "0.0.1",
+  "elements_nominals" : {
+    "R": [
+      {
+        "name": "resistance",
+        "units": "kOhm",
+        "cir_key": null,
+        "nominal" : {
+          "type": "exponential_interval",
+          "interval": [1, 100000000],
+          "interval_points": 10
+        }
+      }
+    ],
+    "C" : [
+      {
+        "name": "capacity",
+        "units": "nF",
+        "cir_key": null,
+        "nominal" : {
+          "type": "uniform_interval",
+          "interval": [1, 1000],
+          "interval_points": 10
+        }
+      }
+    ],
+    "L": [
+      {
+        "name": "inductance",
+        "units": "mH",
+        "cir_key": null,
+        "nominal" : {
+          "type": "uniform_interval",
+          "interval": [1, 10],
+          "interval_points": 10
+        }
+      }
+    ],
+    "D": [
+      {
+        "name": "saturation current",
+        "units": "A",
+        "cir_key": "Is",
+        "nominal" : {
+          "type": "constant",
+          "value": 1e-15
+        }
+      },
+      {
+        "name": "junction potential",
+        "units": "V",
+        "cir_key": "Vj",
+        "nominal" : {
+          "type": "constant",
+          "value": 0.7
+        }
+      },
+      {
+        "name": "reverse breakdown voltage",
+        "units": "V",
+        "cir_key": "Bv",
+        "nominal" : {
+          "type": "constant",
+          "value": 10
+        }
+      },
+      {
+        "name": "current at reverse breakdown voltage",
+        "units": "V",
+        "cir_key": "Ibv",
+        "nominal" : {
+          "type": "constant",
+          "value": 0.7
+        }
+      }
+    ]
+  }
+}
