@@ -6,7 +6,7 @@ from PySpice.Spice.Parser import SpiceParser
 Logging.setup_logging(logging_level=logging.ERROR)
 
 
-parser = SpiceParser(path='C:\dev\ivc-circuit-detector\circuit_classes\D_R\D_R.cir')
+parser = SpiceParser(path=r'C:\dev\ivc-circuit-detector\circuit_classes\D_R\D_R.cir')
 circuit = parser.build_circuit()
 
 el = circuit['R1']
