@@ -12,7 +12,7 @@ setup(name='ivc-circuit-detector',
       author='EPC MSU',
       author_email='marakulin_ap@physlab.ru',
       license='CC0-1.0',
-      packages=['hello_world'],
+      packages=['circuit_detector'],
       install_requires=[
             '',  # YOUR DEPENDENCIES ARE HERE
       ],
