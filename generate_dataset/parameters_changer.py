@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 import itertools
+import os
 
 import numpy as np
 from PySpice.Logging import Logging
@@ -22,6 +23,8 @@ class UnknownIntervalType(ValueError):
 
 
 class CleanSpiceParser(SpiceParser):
+    # PySpice have a lot of bugs, this a class for fix some parser bugs without change PySpice
+    # Unfortunately PySpice is dead and not accept new pull requests
     @staticmethod
     def _build_circuit(circuit, statements, ground):
         for statement in statements:
@@ -32,6 +35,9 @@ class CleanSpiceParser(SpiceParser):
                 statement.build(circuit)
 
 
+# class FixedDeviceModel(DeviceModel):
+#     def clone(self):
+#         return self.__class__(self._name, self._model_type, **self._parameters)
 
 # circuit = Circuit(self.base_circuit.title,
 #                   self.base_circuit._ground,
@@ -50,7 +56,16 @@ class ParametersChanger:
         with open(generation_parameters_json_path, 'r') as f:
             self.gen_params = json.load(f)
         self.base_circuit = self.parser.build_circuit()
+        # models = [FixedDeviceModel(dev_model) for dev_model in self.base_circuit.models]
+        # for dev_model in self.base_circuit.models:
+        #     dev_model.clone = FixedDeviceModel.clone
         self.generated_circuits = []
+
+    def dump_circuits_on_disk(self, base_folder='dataset'):
+        os.makedirs(base_folder, exist_ok=True)
+        for i, circuit in enumerate(self.generated_circuits):
+            with open(os.path.join(base_folder, f'{i}.cir'), 'w+') as f:
+                f.write(str(circuit))
 
     def generate_all_circuits(self):
         existed_elements = self._find_variate_parameters()
@@ -63,27 +78,21 @@ class ParametersChanger:
             self.generated_circuits.append(self._params_set_to_circuit(named_param_set))
 
     def _params_set_to_circuit(self, params_set):
-        circuit = self.base_circuit.clone()
+        circuit = self.base_circuit.clone()  # TODO: Fix clone without change PySpice
         for el_name, el_params in params_set.items():
             # Some crutch or define what element has DeviceModel and what hasn't
             if el_params[0]['cir_key'] is not None:
-                # Has DeviceModel (D, transistors etc)
-
-
-                dev_model = list(circuit.models)[0]
-                new_params = {}
-                for key in dev_model.parameters:
-
-                    if key not in ['Is']:
-                        new_params[key] = a[key]
-                        continue
-
-                    if key == 'Is':
-                        new_params[key] = 1e-42
-
-                new_model = DeviceModel(dev_model.name, dev_model.model_type, **new_params)
-                circuit._models['DMOD_D1'] = new_model
-
+                # Has DeviceModel(s) (D, transistors etc)
+                for dev_model in list(circuit.models):
+                    new_params = {}
+                    for key in dev_model.parameters:
+                        if key not in [el_param['cir_key'] for el_param in el_params]:
+                            new_params[key] = dev_model[key]
+                            continue
+                        param_key = next(item for item in el_params if item["cir_key"] == key)
+                        new_params[key] = param_key['value']
+                    new_model = DeviceModel(dev_model.name, dev_model.model_type, **new_params)
+                    circuit._models[dev_model.name] = new_model
             else:
                 # Hasn't DeviceModel (R, L, C, etc)
                 # Only one named class attribute, so set this attribute to value at list[0] + unit letter
@@ -93,9 +102,7 @@ class ParametersChanger:
                 setattr(circuit[el_name],
                         attr_names[el_name[0]],
                         str(el_params[0]['value']) + str(el_params[0]['cir_unit']))
-
-        with open('dataset\\test.cir', 'w+') as f:
-            f.write(str(circuit))
+        return circuit
 
     @staticmethod
     def _get_params_sets(existed_elements):
@@ -106,9 +113,7 @@ class ParametersChanger:
         for k, params in existed_elements.items():
             for i, param in enumerate(params):
                 _all_intervals.append(param['interval'])
-                del param['interval']
-                del param['nominal']
-                params_keys.append({k: param}) #.copy()
+                params_keys.append({k: param})
 
         # Generate all possible params combinations
         params_sets = list(itertools.product(*_all_intervals))
@@ -163,7 +168,3 @@ class ParametersChanger:
                                      endpoint=True))
         else:
             raise UnknownIntervalType(f'Interval {nominal["type"]} unknown')
-
-
-changer = ParametersChanger('circuit_classes\\D_R\\D_R.cir', 'generate_dataset\\parameters_variations.json')
-changer.generate_all_circuits()
