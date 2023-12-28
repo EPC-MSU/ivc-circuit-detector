@@ -1,5 +1,7 @@
+import copy
 import json
 import logging
+import itertools
 
 import numpy as np
 from PySpice.Logging import Logging
@@ -11,6 +13,7 @@ Logging.setup_logging(logging_level=logging.ERROR)
 
 class UnknownElementToVariate(ValueError):
     pass
+
 
 class UnknownIntervalType(ValueError):
     pass
@@ -27,6 +30,47 @@ class ParametersChanger:
     def generate_all_circuits(self):
         existed_elements = self._find_variate_parameters()
         self._generate_intervals(existed_elements)
+        named_param_sets = self._get_params_sets(existed_elements)
+        self._generate_circuit_with_params_set(named_param_sets)
+
+    def _generate_circuit_with_params_set(self, named_param_sets):
+
+
+        self.generated_circuits.append('')
+
+    @staticmethod
+    def _get_params_sets(existed_elements):
+        _all_intervals = []
+        params_keys = []
+
+        # Create a list of intervals lists
+        for k, params in existed_elements.items():
+            for i, param in enumerate(params):
+                _all_intervals.append(param['interval'])
+                del param['interval']
+                del param['nominal']
+                params_keys.append({k: param}) #.copy()
+
+        # Generate all possible params combinations
+        params_sets = list(itertools.product(*_all_intervals))
+
+        # Create a named params dict from every combination
+        named_param_sets = []
+        for params_set in params_sets:
+            named_param_set = list(params_keys.copy())
+            for i, param_value in enumerate(params_set):
+                named_param_set[i][tuple(named_param_set[i].keys())[0]]['value'] = param_value
+
+            # Reshape from `[R1, D1_p1, D1_p2]` to `[R1, D1[p1, p2]]`
+            reshaped_named_param_set = {}
+            for named_param in copy.deepcopy(named_param_set):
+                k, v = named_param.popitem()
+                if k in reshaped_named_param_set.keys():
+                    reshaped_named_param_set[k].append(v)
+                else:
+                    reshaped_named_param_set[k] = [v]
+            named_param_sets.append(reshaped_named_param_set)
+        return named_param_sets
 
     def _find_variate_parameters(self):
         elem_names = [x for x in list(self.base_circuit.element_names) if x not in ['Print', 'print']]
@@ -40,11 +84,12 @@ class ParametersChanger:
 
     def _generate_intervals(self, existed_elements):
         for k, params in existed_elements.items():
-            for param in params:
-                print(param['name'], self._interval_description_to_interval_points(param['nominal']))
+            for i, param in enumerate(params):
+                existed_elements[k][i]['interval'] = self._description_to_interval_points(param['nominal'])
+        return existed_elements
 
     @staticmethod
-    def _interval_description_to_interval_points(nominal):
+    def _description_to_interval_points(nominal):
         if nominal['type'] == 'constant':
             return [nominal['value']]
         elif nominal['type'] == 'uniform_interval':
@@ -54,12 +99,12 @@ class ParametersChanger:
                                     endpoint=True))
         elif nominal['type'] == 'exponential_interval':
             return list(np.geomspace(nominal['interval'][0],
-                                    nominal['interval'][1],
-                                    nominal['interval_points'],
-                                    endpoint=True))
+                                     nominal['interval'][1],
+                                     nominal['interval_points'],
+                                     endpoint=True))
         else:
             raise UnknownIntervalType(f'Interval {nominal["type"]} unknown')
 
 
-changer = ParametersChanger('circuit_classes\\C_R\\C_R.cir', 'generate_dataset\\parameters_variations.json')
+changer = ParametersChanger('circuit_classes\\D_R\\D_R.cir', 'generate_dataset\\parameters_variations.json')
 changer.generate_all_circuits()
