@@ -6,7 +6,9 @@ import itertools
 import numpy as np
 from PySpice.Logging import Logging
 from PySpice.Spice.Parser import SpiceParser
-from PySpice.Spice.Netlist import DeviceModel
+from PySpice.Spice.Netlist import Circuit, DeviceModel
+from PySpice.Spice.Parser import Model
+from PySpice.Spice.Parser import Element
 
 Logging.setup_logging(logging_level=logging.ERROR)
 
@@ -19,9 +21,32 @@ class UnknownIntervalType(ValueError):
     pass
 
 
+class CleanSpiceParser(SpiceParser):
+    @staticmethod
+    def _build_circuit(circuit, statements, ground):
+        for statement in statements:
+            if isinstance(statement, Element):
+                if statement.name != 'rint':
+                    statement.build(circuit, ground)
+            elif isinstance(statement, Model):
+                statement.build(circuit)
+
+
+
+# circuit = Circuit(self.base_circuit.title,
+#                   self.base_circuit._ground,
+#                   self.base_circuit._global_nodes)
+# circuit._nodes = self.base_circuit._nodes
+# circuit._includes = self.base_circuit._includes
+# circuit._libs = self.base_circuit._libs
+# circuit._elements = self.base_circuit._elements
+# circuit._models = self.base_circuit._models
+# circuit._parameters = self.base_circuit._parameters
+
+
 class ParametersChanger:
     def __init__(self, cir_path, generation_parameters_json_path):
-        self.parser = SpiceParser(path=cir_path)
+        self.parser = CleanSpiceParser(path=cir_path)
         with open(generation_parameters_json_path, 'r') as f:
             self.gen_params = json.load(f)
         self.base_circuit = self.parser.build_circuit()
@@ -34,9 +59,43 @@ class ParametersChanger:
         self._generate_circuit_with_params_set(named_param_sets)
 
     def _generate_circuit_with_params_set(self, named_param_sets):
+        for named_param_set in named_param_sets:
+            self.generated_circuits.append(self._params_set_to_circuit(named_param_set))
+
+    def _params_set_to_circuit(self, params_set):
+        circuit = self.base_circuit.clone()
+        for el_name, el_params in params_set.items():
+            # Some crutch or define what element has DeviceModel and what hasn't
+            if el_params[0]['cir_key'] is not None:
+                # Has DeviceModel (D, transistors etc)
 
 
-        self.generated_circuits.append('')
+                dev_model = list(circuit.models)[0]
+                new_params = {}
+                for key in dev_model.parameters:
+
+                    if key not in ['Is']:
+                        new_params[key] = a[key]
+                        continue
+
+                    if key == 'Is':
+                        new_params[key] = 1e-42
+
+                new_model = DeviceModel(dev_model.name, dev_model.model_type, **new_params)
+                circuit._models['DMOD_D1'] = new_model
+
+            else:
+                # Hasn't DeviceModel (R, L, C, etc)
+                # Only one named class attribute, so set this attribute to value at list[0] + unit letter
+                attr_names = {'R': 'resistance',
+                              'C': 'capacitance_expression',
+                              'L': 'inductance_expression'}
+                setattr(circuit[el_name],
+                        attr_names[el_name[0]],
+                        str(el_params[0]['value']) + str(el_params[0]['cir_unit']))
+
+        with open('dataset\\test.cir', 'w+') as f:
+            f.write(str(circuit))
 
     @staticmethod
     def _get_params_sets(existed_elements):

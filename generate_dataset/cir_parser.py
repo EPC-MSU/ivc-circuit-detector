@@ -28,15 +28,15 @@ for key in a.parameters:
 new_model = DeviceModel(a.name, a.model_type, **new_params)
 circuit._models['DMOD_D1'] = new_model
 
-#
+
 # # print(circuit['D1'].model)
 # # print(circuit)
 # # circuit.R1.resistance = '20K'
 # # circuit.D1.area = 2.0
 # # print(circuit.D1)
 # # print(circuit.raw_spice)
-# with open('dataset/test.cir', 'w+') as f:
-#     f.write(str(circuit))
+with open('dataset/test.cir', 'w+') as f:
+    f.write(str(circuit))
 #
 # # print(circuit)
 # # print(circuit['R1'])
