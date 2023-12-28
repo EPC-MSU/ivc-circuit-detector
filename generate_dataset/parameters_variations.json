@@ -1,7 +1,8 @@
 {
   "name": "Dataset generation parameters settings file",
+  "description": "This file used for variate element parameters in .cir files. For example, resistance of R1 in some schema will be variate in interval from 1 to 100000000 with 10 point in exponential scale. This action produces 10 new .cir files with different resistance.",
   "version": "0.0.2",
-  "elements_nominals" : {
+  "elements" : {
     "R": [
       {
         "name": "resistance",

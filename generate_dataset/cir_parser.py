@@ -1,3 +1,4 @@
+import json
 import logging
 
 from PySpice.Logging import Logging
@@ -12,9 +13,6 @@ parser = SpiceParser(path=r'C:\dev\ivc-circuit-detector\circuit_classes\D_R\D_R.
 circuit = parser.build_circuit()
 
 # circuit['R1'].resistance = '0.0001K'
-# circuit.models['DMOD_D1'].param('VJ', 42)
-# circuit.model('DMOD_LOL', 'D', Af=1, Bv=10, Cj0=1e-14, Eg=1.11, Fc=0.5, Ibv=0.001, Is=1e-10, Kf=0, M=0.5, N=1, Rs=0, Tcv=0, Tm1=0, Tm2=0, Tnom=26.85, Trs=0, Tt=0, Ttt1=0, Ttt2=0, Vj=0.7, Xti=3)
-
 # circuit['D1'].model = 'DMOD_LOL'
 
 a = list(circuit.models)[0]
@@ -30,15 +28,31 @@ for key in a.parameters:
 new_model = DeviceModel(a.name, a.model_type, **new_params)
 circuit._models['DMOD_D1'] = new_model
 
-
-# print(circuit['D1'].model)
-# print(circuit)
-# circuit.R1.resistance = '20K'
-# circuit.D1.area = 2.0
-# print(circuit.D1)
-# print(circuit.raw_spice)
-with open('dataset/test.cir', 'w+') as f:
-    f.write(str(circuit))
-
-# print(circuit)
-# print(circuit['R1'])
+#
+# # print(circuit['D1'].model)
+# # print(circuit)
+# # circuit.R1.resistance = '20K'
+# # circuit.D1.area = 2.0
+# # print(circuit.D1)
+# # print(circuit.raw_spice)
+# with open('dataset/test.cir', 'w+') as f:
+#     f.write(str(circuit))
+#
+# # print(circuit)
+# # print(circuit['R1'])
+#
+#
+# class ParametersChanger:
+#     def __init__(self, cir_path, generation_parameters_json_path):
+#         self.parser = SpiceParser(path=cir_path)
+#         with open(generation_parameters_json_path, 'r') as f:
+#             self.gen_params = json.load(f)
+#         self.base_circuit = parser.build_circuit()
+#         self.generated_circuits = []
+#
+#     def generate_all_circuits(self):
+#         print(self.gen_params)
+#
+#
+# changer = ParametersChanger('circuit_classes\\C_R\\C_R.cir', 'generate_dataset\\generation_parameters.json')
+# changer.generate_all_circuits()
