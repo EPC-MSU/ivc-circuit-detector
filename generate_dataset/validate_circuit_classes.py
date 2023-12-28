@@ -16,7 +16,7 @@ def validate_circuit_classes():
         if not os.path.isfile(png):
             raise FileNotFoundError(png)
         if not os.path.isfile(sch):
-            raise FileNotFoundError(cir)
+            raise FileNotFoundError(sch)
 
         with open(cir, 'r') as f:
             text = ''.join(f.readlines())

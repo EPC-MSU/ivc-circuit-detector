@@ -1,12 +1,13 @@
 {
   "name": "Dataset generation parameters settings file",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "elements_nominals" : {
     "R": [
       {
         "name": "resistance",
         "units": "kOhm",
         "cir_key": null,
+        "cir_unit": "K",
         "nominal" : {
           "type": "exponential_interval",
           "interval": [1, 100000000],
@@ -19,6 +20,7 @@
         "name": "capacity",
         "units": "nF",
         "cir_key": null,
+        "cir_unit": "N",
         "nominal" : {
           "type": "uniform_interval",
           "interval": [1, 1000],
@@ -31,6 +33,7 @@
         "name": "inductance",
         "units": "mH",
         "cir_key": null,
+        "cir_unit": "M",
         "nominal" : {
           "type": "uniform_interval",
           "interval": [1, 10],
@@ -43,6 +46,7 @@
         "name": "saturation current",
         "units": "A",
         "cir_key": "Is",
+        "cir_unit": null,
         "nominal" : {
           "type": "constant",
           "value": 1e-15
@@ -52,6 +56,7 @@
         "name": "junction potential",
         "units": "V",
         "cir_key": "Vj",
+        "cir_unit": null,
         "nominal" : {
           "type": "constant",
           "value": 0.7
@@ -61,6 +66,7 @@
         "name": "reverse breakdown voltage",
         "units": "V",
         "cir_key": "Bv",
+        "cir_unit": null,
         "nominal" : {
           "type": "constant",
           "value": 10
@@ -70,6 +76,7 @@
         "name": "current at reverse breakdown voltage",
         "units": "V",
         "cir_key": "Ibv",
+        "cir_unit": null,
         "nominal" : {
           "type": "constant",
           "value": 0.7
