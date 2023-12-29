@@ -41,4 +41,3 @@ def generate_dataset(save_png=False):
                 if save_png:
                     pname = os.path.join(path, f'{i}.png')
                     simulator.save_plot(circuit, analysis, pname, png_path)
-
