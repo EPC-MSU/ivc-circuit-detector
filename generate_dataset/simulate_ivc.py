@@ -1,10 +1,9 @@
-from epcore.elements import Board
-from epcore.filemanager import save_board_to_ufiv, load_board_from_ufiv
-import csv
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from PySpice.Spice.Parser import Circuit
+from epcore.elements import Board
+from epcore.filemanager import save_board_to_ufiv
 
 
 class SimulatorIVC:
