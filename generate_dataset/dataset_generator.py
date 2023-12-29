@@ -1,3 +1,4 @@
+import json
 import os
 import glob
 
@@ -5,35 +6,39 @@ from generate_dataset.parameters_changer import ParametersChanger
 from generate_dataset.simulate_ivc import SimulatorIVC
 
 GENERATE_SETTINGS_PATH = 'generate_dataset\\parameters_variations.json'
+MEASUREMENTS_SETTINGS_PATH = 'generate_dataset\\measurement_settings.json'
 
 
-def generate_dataset():
+def generate_dataset(save_png=False):
     # changer = ParametersChanger('circuit_classes\\DR_R\\DR_R.cir', GENERATE_SETTINGS_PATH)
     # changer.generate_circuits()
     # path = os.path.join('dataset', 'measurement_default', 'DR')
     # changer.dump_circuits_on_disk(path)
 
+    with open(MEASUREMENTS_SETTINGS_PATH, 'r') as f:
+        measurements_settings = json.load(f)
+
     folders = glob.glob("circuit_classes/*")
-    for measurements_settings in ['measurement_none']:
-        for folder in folders:
-            top, cls = os.path.split(folder)
-            cir_path = os.path.join(folder, cls + '.cir')
-            png_path = os.path.join(folder, cls + '.png')
+    for measurement in measurements_settings['measurement_variants']:
+        for circuit_class_path in folders:
+            _, cls = os.path.split(circuit_class_path)
+            path = os.path.join('dataset', measurement['name'], cls)
+            cir_path = os.path.join(circuit_class_path, cls + '.cir')
+            png_path = os.path.join(circuit_class_path, cls + '.png')
+
             changer = ParametersChanger(cir_path, GENERATE_SETTINGS_PATH)
             changer.generate_circuits()
-            path = os.path.join('dataset', measurements_settings, cls)
             changer.dump_circuits_on_disk(path)
 
-            simulator = SimulatorIVC(1000, 0.3, 0, 0, 0)
+            simulator = SimulatorIVC(measurement['measurement_settings'])
             for i, circuit in enumerate(changer.circuits):
                 print(path, i)
                 analysis = simulator.get_ivc(circuit)
-                fname = os.path.join(path, f'{i}.csv')
-                simulator.save_ivc(circuit, analysis, fname)
+                cname = os.path.join(path, f'{i}.uzf')
+                simulator.save_ivc(circuit, analysis, cname)
 
                 pname = os.path.join(path, f'{i}.png')
                 simulator.save_plot(circuit, analysis, pname, png_path)
 
 
-
-generate_dataset()
+generate_dataset(save_png=True)

@@ -1,5 +1,5 @@
-
-
+from epcore.elements import Board
+from epcore.filemanager import save_board_to_ufiv, load_board_from_ufiv
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,17 +8,13 @@ from PySpice.Spice.Parser import Circuit
 
 
 class SimulatorIVC:
-    def __init__(self,
-                 probe_signal_frequency,
-                 max_voltage,
-                 precharge_delay,
-                 sampling_rate,
-                 internal_resistance):
-        self.probe_signal_frequency = probe_signal_frequency
-        self.max_voltage = max_voltage
-        self.precharge_delay = precharge_delay
-        self.sampling_rate = sampling_rate
-        self.internal_resistance = internal_resistance
+    def __init__(self, measurement_settings_json):
+        self.measurement_settings_json = measurement_settings_json
+        self.probe_signal_frequency = measurement_settings_json['probe_signal_frequency']
+        self.max_voltage = measurement_settings_json['max_voltage']
+        self.precharge_delay = measurement_settings_json['precharge_delay']
+        self.sampling_rate = measurement_settings_json['sampling_rate']
+        self.internal_resistance = measurement_settings_json['internal_resistance']
         self.num_cycles = 1
         self.SNR = 40
 
@@ -38,12 +34,20 @@ class SimulatorIVC:
         analysis.VCurrent = analysis.VCurrent[len(analysis.VCurrent) - lendata:len(analysis.VCurrent)]
         return analysis
 
-    @staticmethod
-    def save_ivc(circuit, analysis, path):
-        with open(path, 'w') as csv_file:
-            csv_writer = csv.writer(csv_file, delimiter=';')
-            csv_writer.writerow(analysis.input_dummy)
-            csv_writer.writerow(analysis.VCurrent)
+    def save_ivc(self, circuit, analysis, path):
+        currents = list(analysis.VCurrent.as_ndarray())
+        voltages = list(analysis.input_dummy.as_ndarray())
+        measurement = {'measurement_settings': self.measurement_settings_json,
+                       'comment': circuit.plot_title.replace('\n', ' '),
+                       'currents': currents,
+                       'voltages': voltages}
+
+        # TODO: Fix epcore, actually PCB not saved into ufiv
+        board = {'version': "1.1.2",
+                 "PCB": {"pcb_name": "myclass", "comment": "super_comment"},
+                 'elements': [{'pins': [{'iv_curves': [measurement], 'x': 0, 'y': 0}]}]}
+        epcore_board = Board.create_from_json(board)
+        save_board_to_ufiv(path, epcore_board)
 
     def save_plot(self, circuit, analysis, path, png_path, plot_measurements_settings=True):
         fig, ax = plt.subplots(1, figsize=(8, 4))
