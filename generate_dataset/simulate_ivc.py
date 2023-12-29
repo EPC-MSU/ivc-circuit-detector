@@ -16,10 +16,11 @@ class SimulatorIVC:
                  internal_resistance):
         self.probe_signal_frequency = probe_signal_frequency
         self.max_voltage = max_voltage
-        # self.precharge_delay = precharge_delay
-        # self.sampling_rate = sampling_rate
-        # self.internal_resistance = internal_resistance
+        self.precharge_delay = precharge_delay
+        self.sampling_rate = sampling_rate
+        self.internal_resistance = internal_resistance
         self.num_cycles = 1
+        self.SNR = 40
 
     def get_ivc(self, circuit: Circuit):
         lendata = 100
@@ -44,81 +45,41 @@ class SimulatorIVC:
             csv_writer.writerow(analysis.input_dummy)
             csv_writer.writerow(analysis.VCurrent)
 
-    @staticmethod
-    def save_plot(circuit, analysis, path, png_path):
-        fig, ax = plt.subplots(1, figsize=(6, 6))
-
+    def save_plot(self, circuit, analysis, path, png_path, plot_measurements_settings=True):
+        fig, ax = plt.subplots(1, figsize=(8, 4))
+        plt.subplots_adjust(right=0.5, bottom=0.15)
         ax.grid()
         ax.plot(analysis.input_dummy, analysis.VCurrent)
-        ax.set_xlabel('Напряжение [В]')
-        ax.set_xlabel('Сила тока [А]')
+        ax.set_xlabel('Voltage [V]')
+        ax.set_ylabel('Current [A]')
 
         arr_img = plt.imread(png_path)
-        im = OffsetImage(arr_img, zoom=.65)
-        ab = AnnotationBbox(im, (1, 0), xycoords='axes fraction', box_alignment=(1.1, -0.1))
+        im = OffsetImage(arr_img, zoom=.5)
+        ab = AnnotationBbox(im, (1, 0), xycoords='axes fraction', box_alignment=(-0.68, 0.1))
         ax.add_artist(ab)
-        # plt.tight_layout(pad=1, w_pad=3, h_pad=1)
-        # plt.figtext(0.9, 0.5, s=circuit.title)
-        # plt.figtext(0.9, 0.5, s=circuit.title)
-        ax.set_title(circuit.title)
-        plt.savefig(path, dpi=150)
+        ax.set_title('IV-Characteristic')
+
+        plt.figtext(0.62, 0.45, s=circuit.plot_title)
+        if plot_measurements_settings:
+            sett = '[Measurements settings]\n'
+            sett += f'probe_signal_frequency: {self.probe_signal_frequency}\n'
+            sett += f'max_voltage: {self.max_voltage}\n'
+            sett += f'precharge_delay: {self.precharge_delay}\n'
+            sett += f'sampling_rate: {self.sampling_rate}\n'
+            sett += f'internal_resistance: {self.sampling_rate}\n'
+            plt.figtext(0.62, 0.65, s=sett)
+
+        plt.savefig(path, dpi=100)
         plt.clf()
 
-    # def add_noise(self):
-    #     # Расчитываем шум независмо для тока и напряжения исходя из среднеквадратичных значений и одинакового SNR
-    #     avg_V_db = 10 * np.log10(np.mean(np.array(analysis.input_dummy, dtype=float) ** 2))
-    #     avg_Vnoise_db = avg_V_db - input_data.SNR
-    #     Vnoise = np.random.normal(0, np.sqrt(10 ** (avg_Vnoise_db / 10)), len(analysis.input_dummy))
-    #     analysis.input_dummy = np.array(analysis.input_dummy, dtype=float) + Vnoise
-    #     avg_I_db = 10 * np.log10(np.mean(np.array(analysis.VCurrent, dtype=float) ** 2))
-    #     avg_Inoise_db = avg_I_db - input_data.SNR
-    #     Inoise = np.random.normal(0, np.sqrt(10 ** (avg_Inoise_db / 10)), len(analysis.VCurrent))
-    #     analysis.VCurrent = np.array(analysis.VCurrent, dtype=float) + Inoise
-
-
-
-class Init_Data:
-    F: float
-    V: float
-    Rcs: float = 0.0
-    SNR: float = 40.0
-
-
-def LoadFile(path):
-    parser = MySpiceParser(path=path)
-    circuit = parser.build_circuit()
-    return circuit
-
-
-def SaveFile(analysis, path):
-    with open(path, 'w') as csv_file:
-        csv_writer = csv.writer(csv_file, delimiter=';')
-        csv_writer.writerow(analysis.input_dummy)
-        csv_writer.writerow(analysis.VCurrent)
-    return
-
-
-def CreateCVC(circuit, input_data, lendata, cycle=1):
-    # lendata не может принимать значения меньше 59
-    # if lendata>86:
-    #    lendata = lendata - 8
-    # else:
-    #    lendata = lendata - 9
-    period = 1 / input_data.F
-    rms_voltage = input_data.V / math.sqrt(2)
-    circuit.R('cs', 'input', 'input_dummy', input_data.Rcs)
-    circuit.AcLine('Current', circuit.gnd, 'input_dummy', rms_voltage=rms_voltage, frequency=input_data.F)
-    simulator = circuit.simulator()
-    analysis = simulator.transient(step_time=period / lendata, end_time=period * cycle)
-    analysis.input_dummy = analysis.input_dummy[len(analysis.input_dummy)-lendata:len(analysis.input_dummy)]
-    analysis.VCurrent = analysis.VCurrent[len(analysis.VCurrent)-lendata:len(analysis.VCurrent)]
-# Расчитываем шум независмо для тока и напряжения исходя из среднеквадратичных значений и одинакового SNR
-    avg_V_db = 10 * np.log10(np.mean(np.array(analysis.input_dummy, dtype=float) ** 2))
-    avg_Vnoise_db = avg_V_db - input_data.SNR
-    Vnoise = np.random.normal(0, np.sqrt(10 ** (avg_Vnoise_db / 10)), len(analysis.input_dummy))
-    analysis.input_dummy = np.array(analysis.input_dummy, dtype=float) + Vnoise
-    avg_I_db = 10 * np.log10(np.mean(np.array(analysis.VCurrent, dtype=float) ** 2))
-    avg_Inoise_db = avg_I_db - input_data.SNR
-    Inoise = np.random.normal(0, np.sqrt(10 ** (avg_Inoise_db / 10)), len(analysis.VCurrent))
-    analysis.VCurrent = np.array(analysis.VCurrent, dtype=float) + Inoise
-    return analysis
+    @staticmethod
+    def add_noise(analysis, SNR=40):
+        avg_V_db = 10 * np.log10(np.mean(np.array(analysis.input_dummy, dtype=float) ** 2))
+        avg_Vnoise_db = avg_V_db - SNR
+        Vnoise = np.random.normal(0, np.sqrt(10 ** (avg_Vnoise_db / 10)), len(analysis.input_dummy))
+        analysis.input_dummy = np.array(analysis.input_dummy, dtype=float) + Vnoise
+        avg_I_db = 10 * np.log10(np.mean(np.array(analysis.VCurrent, dtype=float) ** 2))
+        avg_Inoise_db = avg_I_db - SNR
+        Inoise = np.random.normal(0, np.sqrt(10 ** (avg_Inoise_db / 10)), len(analysis.VCurrent))
+        analysis.VCurrent = np.array(analysis.VCurrent, dtype=float) + Inoise
+        return analysis
