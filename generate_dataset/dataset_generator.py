@@ -7,8 +7,7 @@ GENERATE_SETTINGS_PATH = 'generate_dataset\\parameters_variations.json'
 
 
 def generate_dataset():
-    # changer = ParametersChanger('circuit_classes\\DR_R\\DR_R.cir',
-    #                             GENERATE_SETTINGS_PATH)
+    # changer = ParametersChanger('circuit_classes\\DR_R\\DR_R.cir', GENERATE_SETTINGS_PATH)
     # changer.generate_circuits()
     # path = os.path.join('dataset', 'measurement_default', 'DR')
     # changer.dump_circuits_on_disk(path)

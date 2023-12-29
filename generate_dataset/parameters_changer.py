@@ -46,7 +46,7 @@ class ParametersChanger:
         self.base_cir_path = base_cir_path
 
         self.circuits = []
-
+        self.circuit_class = os.path.splitext(os.path.basename(self.base_cir_path))[0]
         self._base_circuit = CleanSpiceParser(path=base_cir_path).build_circuit()
         self._params_settings = self._load_params_settings()
         self._settings = self._generate_intervals(self._filter_settings(self._params_settings))
@@ -83,6 +83,7 @@ class ParametersChanger:
     def _params_combination_to_circuit(self, params_combination):
         # Make from combination-dict a circuit with this params.
         circuit = self._base_circuit.clone()  # TODO: Fix clone without change PySpice
+        # circuit.title = self._params_repr(params_combination)
         for el_name, el_params in params_combination.items():
             # Some crutch or define what element has DeviceModel and what hasn't
             if el_params[0]['cir_key'] is not None:
@@ -185,3 +186,15 @@ class ParametersChanger:
                 del clean_param['nominal']
                 clean_settings.append({k: clean_param})
         return clean_settings
+
+    def _params_repr(self, params_combination) -> str:
+        els = []
+        for k, params in params_combination.items():
+            s_params = []
+            for param in params:
+                if param["cir_key"] is not None:
+                    s_params.append(f'{param["cir_key"]}={param["value"]}')
+                else:
+                    s_params.append(f'{param["value"]}{param["cir_unit"]}')  # :.2f
+            els.append(f'{k}({", ".join(s_params)})')
+        return f"[{self.circuit_class}] {' '.join(els)}"
