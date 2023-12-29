@@ -75,6 +75,7 @@ class SimulatorIVC:
 
         plt.savefig(path, dpi=100)
         plt.clf()
+        plt.close('all')
 
     @staticmethod
     def add_noise(analysis, SNR=40):

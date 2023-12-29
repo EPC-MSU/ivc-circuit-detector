@@ -10,6 +10,7 @@ MEASUREMENTS_SETTINGS_PATH = 'generate_dataset\\measurement_settings.json'
 
 
 def generate_dataset(save_png=False):
+    # # Example how to create .cir-files for one circuit class
     # changer = ParametersChanger('circuit_classes\\DR_R\\DR_R.cir', GENERATE_SETTINGS_PATH)
     # changer.generate_circuits()
     # path = os.path.join('dataset', 'measurement_default', 'DR')
@@ -37,8 +38,7 @@ def generate_dataset(save_png=False):
                 cname = os.path.join(path, f'{i}.uzf')
                 simulator.save_ivc(circuit, analysis, cname)
 
-                pname = os.path.join(path, f'{i}.png')
-                simulator.save_plot(circuit, analysis, pname, png_path)
+                if save_png:
+                    pname = os.path.join(path, f'{i}.png')
+                    simulator.save_plot(circuit, analysis, pname, png_path)
 
-
-generate_dataset(save_png=True)
