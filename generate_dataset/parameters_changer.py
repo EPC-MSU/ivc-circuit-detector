@@ -39,40 +39,40 @@ class ParametersChanger:
         Class for iterating through all combinations of circuit parameters
         and creating .cir files with new parameters.
 
-        :param base_cir_path: Path to .cir file (circuit_classes/X/X.cir)
+        :param base_cir_path: Path to base .cir file (circuit_classes/X/X.cir)
         :param params_settings_path: Path to parameters intervals (generate_dataset/parameters_variations.json)
         """
         self.params_settings_path = params_settings_path
         self.base_cir_path = base_cir_path
 
-        self.generated_circuits = []
+        self.circuits = []
 
         self._base_circuit = CleanSpiceParser(path=base_cir_path).build_circuit()
         self._params_settings = self._load_params_settings()
         self._settings = self._generate_intervals(self._filter_settings(self._params_settings))
         self._assist_settings = self._make_assist_settings()
 
-    def generate_all_circuits(self) -> None:
+    def generate_circuits(self) -> None:
         """
         Generate all possible parameters combinations according to settings in
-        self.params_settings_path for specific circuit from self.base_cir_path
+        `self.params_settings_path` for specific circuit from `self.base_cir_path`
 
-        Generated circuits you can find in self.generated_circuits
+        Generated circuits you can find in `self.circuits`
 
         For save to disk use .dump_circuits_on_disk() method
         """
         params_combinations = self._get_params_combinations(self._settings)
         for params_combination in params_combinations:
             circuit = self._params_combination_to_circuit(params_combination)
-            self.generated_circuits.append(circuit)
+            self.circuits.append(circuit)
 
     def dump_circuits_on_disk(self, base_folder) -> None:
         """
-        Method dumps self.generated_circuits to disk as .cir files
+        Method dumps `self.circuits` to disk as .cir-files
         :param base_folder: Folder to save .cir files. (If not exist - it's ok)
         """
         os.makedirs(base_folder, exist_ok=True)
-        for i, circuit in enumerate(self.generated_circuits):
+        for i, circuit in enumerate(self.circuits):
             with open(os.path.join(base_folder, f'{i}.cir'), 'w+') as f:
                 f.write(str(circuit))
 
@@ -81,7 +81,7 @@ class ParametersChanger:
             return json.load(f)
 
     def _params_combination_to_circuit(self, params_combination):
-        # Make from params-dict circuit with this params.
+        # Make from combination-dict a circuit with this params.
         circuit = self._base_circuit.clone()  # TODO: Fix clone without change PySpice
         for el_name, el_params in params_combination.items():
             # Some crutch or define what element has DeviceModel and what hasn't
@@ -135,6 +135,8 @@ class ParametersChanger:
                     reshaped_named_param_set[k].append(v)
                 else:
                     reshaped_named_param_set[k] = [v]
+
+            # Add reshaped named combination to final list
             params_combinations.append(reshaped_named_param_set)
         return params_combinations
 

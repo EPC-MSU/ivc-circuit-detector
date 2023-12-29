@@ -1,12 +1,12 @@
 {
-  "name": "Dataset generation parameters settings file",
+  "title": "Dataset generation parameters settings file",
   "description": "This file used for variate element parameters in .cir files. For example, resistance of R1 in some schema will be variate in interval from 1 to 100000000 with 10 point in exponential scale. This action produces 10 new .cir files with different resistance.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "elements" : {
     "R": [
       {
-        "name": "resistance",
-        "units": "kOhm",
+        "_name": "resistance",
+        "_units": "kOhm",
         "cir_key": null,
         "cir_unit": "K",
         "nominal" : {
@@ -18,8 +18,8 @@
     ],
     "C" : [
       {
-        "name": "capacity",
-        "units": "nF",
+        "_name": "capacity",
+        "_units": "nF",
         "cir_key": null,
         "cir_unit": "N",
         "nominal" : {
@@ -31,8 +31,8 @@
     ],
     "L": [
       {
-        "name": "inductance",
-        "units": "mH",
+        "_name": "inductance",
+        "_units": "mH",
         "cir_key": null,
         "cir_unit": "M",
         "nominal" : {
@@ -44,8 +44,8 @@
     ],
     "D": [
       {
-        "name": "saturation current",
-        "units": "A",
+        "_name": "saturation current",
+        "_units": "A",
         "cir_key": "Is",
         "cir_unit": null,
         "nominal" : {
@@ -54,8 +54,8 @@
         }
       },
       {
-        "name": "junction potential",
-        "units": "V",
+        "_name": "junction potential",
+        "_units": "V",
         "cir_key": "Vj",
         "cir_unit": null,
         "nominal" : {
@@ -64,8 +64,8 @@
         }
       },
       {
-        "name": "reverse breakdown voltage",
-        "units": "V",
+        "_name": "reverse breakdown voltage",
+        "_units": "V",
         "cir_key": "Bv",
         "cir_unit": null,
         "nominal" : {
@@ -74,8 +74,8 @@
         }
       },
       {
-        "name": "current at reverse breakdown voltage",
-        "units": "V",
+        "_name": "current at reverse breakdown voltage",
+        "_units": "V",
         "cir_key": "Ibv",
         "cir_unit": null,
         "nominal" : {
