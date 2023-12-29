@@ -1,0 +1,30 @@
+{
+  "measurement_variants": [
+    {
+      "variant": 1,
+      "name": "measurement_variant_1",
+      "measurement_settings": {
+        "properties": {
+          "probe_signal_frequency": 1,
+          "max_voltage": 1,
+          "precharge_delay": 1,
+          "sampling_rate": 1,
+          "internal_resistance": 1
+        }
+      }
+    },
+    {
+      "variant": 2,
+      "name": "measurement_variant_2",
+      "measurement_settings": {
+        "properties": {
+          "probe_signal_frequency": 2,
+          "max_voltage": 2,
+          "precharge_delay": 2,
+          "sampling_rate": 2,
+          "internal_resistance": 2
+        }
+      }
+    }
+  ]
+}

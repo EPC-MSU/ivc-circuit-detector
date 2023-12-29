@@ -83,7 +83,7 @@ class ParametersChanger:
     def _params_combination_to_circuit(self, params_combination):
         # Make from combination-dict a circuit with this params.
         circuit = self._base_circuit.clone()  # TODO: Fix clone without change PySpice
-        # circuit.title = self._params_repr(params_combination)
+        circuit.title = self._params_repr(params_combination)
         for el_name, el_params in params_combination.items():
             # Some crutch or define what element has DeviceModel and what hasn't
             if el_params[0]['cir_key'] is not None:
