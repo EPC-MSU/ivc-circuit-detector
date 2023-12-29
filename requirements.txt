@@ -1,1 +1,4 @@
 git+https://github.com/EPC-MSU/EPCore
+git+https://github.com/EPC-MSU/MySpice
+matplotlib
+PySpice
