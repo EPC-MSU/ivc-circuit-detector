@@ -3,6 +3,7 @@
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from PySpice.Spice.Parser import Circuit
 
 
@@ -44,14 +45,23 @@ class SimulatorIVC:
             csv_writer.writerow(analysis.VCurrent)
 
     @staticmethod
-    def save_plot(circuit, analysis, path):
-        plt.figure(1, (10, 10))
-        plt.grid()
-        plt.plot(analysis.input_dummy, analysis.VCurrent)
-        plt.xlabel('Напряжение [В]')
-        plt.ylabel('Сила тока [А]')
-        plt.figtext(0.5, 0.8, s=circuit.title)
-        plt.savefig(path, dpi=200)
+    def save_plot(circuit, analysis, path, png_path):
+        fig, ax = plt.subplots(1, figsize=(6, 6))
+
+        ax.grid()
+        ax.plot(analysis.input_dummy, analysis.VCurrent)
+        ax.set_xlabel('Напряжение [В]')
+        ax.set_xlabel('Сила тока [А]')
+
+        arr_img = plt.imread(png_path)
+        im = OffsetImage(arr_img, zoom=.65)
+        ab = AnnotationBbox(im, (1, 0), xycoords='axes fraction', box_alignment=(1.1, -0.1))
+        ax.add_artist(ab)
+        # plt.tight_layout(pad=1, w_pad=3, h_pad=1)
+        # plt.figtext(0.9, 0.5, s=circuit.title)
+        # plt.figtext(0.9, 0.5, s=circuit.title)
+        ax.set_title(circuit.title)
+        plt.savefig(path, dpi=150)
         plt.clf()
 
     # def add_noise(self):

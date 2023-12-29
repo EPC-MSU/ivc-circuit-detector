@@ -195,6 +195,9 @@ class ParametersChanger:
                 if param["cir_key"] is not None:
                     s_params.append(f'{param["cir_key"]}={param["value"]}')
                 else:
-                    s_params.append(f'{param["value"]}{param["cir_unit"]}')  # :.2f
+                    if param["value"] > 1:
+                        s_params.append(f'{param["value"]:.0f}{param["cir_unit"]}')
+                    else:
+                        s_params.append(f'{param["value"]:.4f}{param["cir_unit"]}')
             els.append(f'{k}({", ".join(s_params)})')
         return f"[{self.circuit_class}] {' '.join(els)}"

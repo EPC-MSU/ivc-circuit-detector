@@ -18,6 +18,7 @@ def generate_dataset():
         for folder in folders:
             top, cls = os.path.split(folder)
             cir_path = os.path.join(folder, cls + '.cir')
+            png_path = os.path.join(folder, cls + '.png')
             changer = ParametersChanger(cir_path, GENERATE_SETTINGS_PATH)
             changer.generate_circuits()
             path = os.path.join('dataset', measurements_settings, cls)
@@ -31,7 +32,7 @@ def generate_dataset():
                 simulator.save_ivc(circuit, analysis, fname)
 
                 pname = os.path.join(path, f'{i}.png')
-                simulator.save_plot(circuit, analysis, pname)
+                simulator.save_plot(circuit, analysis, pname, png_path)
 
 
 
