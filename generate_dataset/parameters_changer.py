@@ -78,6 +78,11 @@ class ParametersChanger:
             self.generated_circuits.append(self._params_set_to_circuit(named_param_set))
 
     def _params_set_to_circuit(self, params_set):
+        """
+        Make from params-dict circuit with this params.
+        :param params_set:
+        :return:
+        """
         circuit = self.base_circuit.clone()  # TODO: Fix clone without change PySpice
         for el_name, el_params in params_set.items():
             # Some crutch or define what element has DeviceModel and what hasn't
@@ -109,19 +114,22 @@ class ParametersChanger:
         _all_intervals = []
         params_keys = []
 
-        # Create a list of intervals lists
+        # Get all params intervals. Make list of intervals lists (need for itertools.product)
         for k, params in existed_elements.items():
             for i, param in enumerate(params):
                 _all_intervals.append(param['interval'])
-                params_keys.append({k: param})
+                clean_param = copy.deepcopy(param)
+                del clean_param['interval']
+                del clean_param['nominal']
+                params_keys.append({k: clean_param})
 
         # Generate all possible params combinations
         params_sets = list(itertools.product(*_all_intervals))
 
-        # Create a named params dict from every combination
+        # Create a named params dict for every combination
         named_param_sets = []
         for params_set in params_sets:
-            named_param_set = list(params_keys.copy())
+            named_param_set = copy.deepcopy(params_keys)
             for i, param_value in enumerate(params_set):
                 named_param_set[i][tuple(named_param_set[i].keys())[0]]['value'] = param_value
 
@@ -137,6 +145,7 @@ class ParametersChanger:
         return named_param_sets
 
     def _find_variate_parameters(self):
+        # Find parameters variation settings for every element in schema
         elem_names = [x for x in list(self.base_circuit.element_names) if x not in ['Print', 'print']]
         existed_elements = {}
         for elem_name in elem_names:
@@ -147,6 +156,7 @@ class ParametersChanger:
         return existed_elements
 
     def _generate_intervals(self, existed_elements):
+        # See _description_to_interval_points
         for k, params in existed_elements.items():
             for i, param in enumerate(params):
                 existed_elements[k][i]['interval'] = self._description_to_interval_points(param['nominal'])
@@ -154,6 +164,7 @@ class ParametersChanger:
 
     @staticmethod
     def _description_to_interval_points(nominal):
+        # Make from interval description interval with points itself
         if nominal['type'] == 'constant':
             return [nominal['value']]
         elif nominal['type'] == 'uniform_interval':
