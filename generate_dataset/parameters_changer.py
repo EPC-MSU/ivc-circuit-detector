@@ -1,15 +1,13 @@
+import os
 import copy
 import json
 import logging
 import itertools
-import os
 
 import numpy as np
 from PySpice.Logging import Logging
-from PySpice.Spice.Parser import SpiceParser
-from PySpice.Spice.Netlist import Circuit, DeviceModel
-from PySpice.Spice.Parser import Model
-from PySpice.Spice.Parser import Element
+from PySpice.Spice.Parser import Element, Model, SpiceParser
+from PySpice.Spice.Netlist import DeviceModel
 
 Logging.setup_logging(logging_level=logging.ERROR)
 
@@ -35,56 +33,57 @@ class CleanSpiceParser(SpiceParser):
                 statement.build(circuit)
 
 
-# class FixedDeviceModel(DeviceModel):
-#     def clone(self):
-#         return self.__class__(self._name, self._model_type, **self._parameters)
-
-# circuit = Circuit(self.base_circuit.title,
-#                   self.base_circuit._ground,
-#                   self.base_circuit._global_nodes)
-# circuit._nodes = self.base_circuit._nodes
-# circuit._includes = self.base_circuit._includes
-# circuit._libs = self.base_circuit._libs
-# circuit._elements = self.base_circuit._elements
-# circuit._models = self.base_circuit._models
-# circuit._parameters = self.base_circuit._parameters
-
-
 class ParametersChanger:
-    def __init__(self, cir_path, generation_parameters_json_path):
-        self.parser = CleanSpiceParser(path=cir_path)
-        with open(generation_parameters_json_path, 'r') as f:
-            self.gen_params = json.load(f)
-        self.base_circuit = self.parser.build_circuit()
-        # models = [FixedDeviceModel(dev_model) for dev_model in self.base_circuit.models]
-        # for dev_model in self.base_circuit.models:
-        #     dev_model.clone = FixedDeviceModel.clone
+    def __init__(self, base_cir_path, params_settings_path):
+        """
+        Class for iterating through all combinations of circuit parameters
+        and creating .cir files with new parameters.
+
+        :param base_cir_path: Path to .cir file (circuit_classes/X/X.cir)
+        :param params_settings_path: Path to parameters intervals (generate_dataset/parameters_variations.json)
+        """
+        self.params_settings_path = params_settings_path
+        self.base_cir_path = base_cir_path
+
         self.generated_circuits = []
 
-    def dump_circuits_on_disk(self, base_folder='dataset'):
+        self._base_circuit = CleanSpiceParser(path=base_cir_path).build_circuit()
+        self._params_settings = self._load_params_settings()
+        self._settings = self._generate_intervals(self._filter_settings(self._params_settings))
+        self._assist_settings = self._make_assist_settings()
+
+    def generate_all_circuits(self) -> None:
+        """
+        Generate all possible parameters combinations according to settings in
+        self.params_settings_path for specific circuit from self.base_cir_path
+
+        Generated circuits you can find in self.generated_circuits
+
+        For save to disk use .dump_circuits_on_disk() method
+        """
+        params_combinations = self._get_params_combinations(self._settings)
+        for params_combination in params_combinations:
+            circuit = self._params_combination_to_circuit(params_combination)
+            self.generated_circuits.append(circuit)
+
+    def dump_circuits_on_disk(self, base_folder) -> None:
+        """
+        Method dumps self.generated_circuits to disk as .cir files
+        :param base_folder: Folder to save .cir files. (If not exist - it's ok)
+        """
         os.makedirs(base_folder, exist_ok=True)
         for i, circuit in enumerate(self.generated_circuits):
             with open(os.path.join(base_folder, f'{i}.cir'), 'w+') as f:
                 f.write(str(circuit))
 
-    def generate_all_circuits(self):
-        existed_elements = self._find_variate_parameters()
-        self._generate_intervals(existed_elements)
-        named_param_sets = self._get_params_sets(existed_elements)
-        self._generate_circuit_with_params_set(named_param_sets)
+    def _load_params_settings(self):
+        with open(self.params_settings_path, 'r') as f:
+            return json.load(f)
 
-    def _generate_circuit_with_params_set(self, named_param_sets):
-        for named_param_set in named_param_sets:
-            self.generated_circuits.append(self._params_set_to_circuit(named_param_set))
-
-    def _params_set_to_circuit(self, params_set):
-        """
-        Make from params-dict circuit with this params.
-        :param params_set:
-        :return:
-        """
-        circuit = self.base_circuit.clone()  # TODO: Fix clone without change PySpice
-        for el_name, el_params in params_set.items():
+    def _params_combination_to_circuit(self, params_combination):
+        # Make from params-dict circuit with this params.
+        circuit = self._base_circuit.clone()  # TODO: Fix clone without change PySpice
+        for el_name, el_params in params_combination.items():
             # Some crutch or define what element has DeviceModel and what hasn't
             if el_params[0]['cir_key'] is not None:
                 # Has DeviceModel(s) (D, transistors etc)
@@ -109,58 +108,52 @@ class ParametersChanger:
                         str(el_params[0]['value']) + str(el_params[0]['cir_unit']))
         return circuit
 
-    @staticmethod
-    def _get_params_sets(existed_elements):
-        _all_intervals = []
-        params_keys = []
-
+    def _get_params_combinations(self, settings):
         # Get all params intervals. Make list of intervals lists (need for itertools.product)
-        for k, params in existed_elements.items():
-            for i, param in enumerate(params):
+        _all_intervals = []
+        for params in settings.values():
+            for param in params:
                 _all_intervals.append(param['interval'])
-                clean_param = copy.deepcopy(param)
-                del clean_param['interval']
-                del clean_param['nominal']
-                params_keys.append({k: clean_param})
 
         # Generate all possible params combinations
-        params_sets = list(itertools.product(*_all_intervals))
+        raw_params_combs = list(itertools.product(*_all_intervals))
 
         # Create a named params dict for every combination
-        named_param_sets = []
-        for params_set in params_sets:
-            named_param_set = copy.deepcopy(params_keys)
-            for i, param_value in enumerate(params_set):
-                named_param_set[i][tuple(named_param_set[i].keys())[0]]['value'] = param_value
+        params_combinations = []
+        for raw_params_comb in raw_params_combs:
+            # Set a 'value' key for every param with numerical value
+            named_params_comb = copy.deepcopy(self._assist_settings)
+            for i, param_value in enumerate(raw_params_comb):
+                key = tuple(named_params_comb[i].keys())[0]
+                named_params_comb[i][key]['value'] = param_value
 
             # Reshape from `[R1, D1_p1, D1_p2]` to `[R1, D1[p1, p2]]`
             reshaped_named_param_set = {}
-            for named_param in copy.deepcopy(named_param_set):
+            for named_param in copy.deepcopy(named_params_comb):
                 k, v = named_param.popitem()
                 if k in reshaped_named_param_set.keys():
                     reshaped_named_param_set[k].append(v)
                 else:
                     reshaped_named_param_set[k] = [v]
-            named_param_sets.append(reshaped_named_param_set)
-        return named_param_sets
+            params_combinations.append(reshaped_named_param_set)
+        return params_combinations
 
-    def _find_variate_parameters(self):
-        # Find parameters variation settings for every element in schema
-        elem_names = [x for x in list(self.base_circuit.element_names) if x not in ['Print', 'print']]
-        existed_elements = {}
-        for elem_name in elem_names:
-            if elem_name[0] not in self.gen_params['elements']:
+    def _filter_settings(self, params_settings):
+        # Filter parameters variation settings only for existed elements in self._base_circuit
+        settings_filtered = {}
+        for elem_name in list(self._base_circuit.element_names):
+            if elem_name[0] not in params_settings['elements']:
                 raise UnknownElementToVariate(f'Element {elem_name} is unknown for parameters variation')
             # Create a dict like 'R1' = {<Resistance variate settings>}
-            existed_elements[elem_name] = self.gen_params['elements'][elem_name[0]]
-        return existed_elements
+            settings_filtered[elem_name] = params_settings['elements'][elem_name[0]]
+        return settings_filtered
 
-    def _generate_intervals(self, existed_elements):
-        # See _description_to_interval_points
-        for k, params in existed_elements.items():
+    def _generate_intervals(self, settings):
+        # Make from intervals descriptions intervals with points itself
+        for k, params in settings.items():
             for i, param in enumerate(params):
-                existed_elements[k][i]['interval'] = self._description_to_interval_points(param['nominal'])
-        return existed_elements
+                settings[k][i]['interval'] = self._description_to_interval_points(param['nominal'])
+        return settings
 
     @staticmethod
     def _description_to_interval_points(nominal):
@@ -179,3 +172,14 @@ class ParametersChanger:
                                      endpoint=True))
         else:
             raise UnknownIntervalType(f'Interval {nominal["type"]} unknown')
+
+    def _make_assist_settings(self):
+        # Fill assist variable with no intervals, just elements description
+        clean_settings = []
+        for k, params in self._settings.items():
+            for param in params:
+                clean_param = copy.deepcopy(param)
+                del clean_param['interval']
+                del clean_param['nominal']
+                clean_settings.append({k: clean_param})
+        return clean_settings
