@@ -7,36 +7,35 @@ from PySpice.Spice.Parser import Circuit
 
 
 class SimulatorIVC:
-    def __init__(self, measurement_settings_json):
-        self.measurement_settings_json = measurement_settings_json
-        self.probe_signal_frequency = measurement_settings_json['probe_signal_frequency']
-        self.max_voltage = measurement_settings_json['max_voltage']
-        self.precharge_delay = measurement_settings_json['precharge_delay']
-        self.sampling_rate = measurement_settings_json['sampling_rate']
-        self.internal_resistance = measurement_settings_json['internal_resistance']
-        self.num_cycles = 1
+    def __init__(self, measurement_variant):
+        self.measurement_settings = measurement_variant['measurement_settings']
+        self.simulator_settings = measurement_variant['simulator_settings']
         self.SNR = 40
 
     def get_ivc(self, circuit: Circuit):
-        lendata = 100
+        points = self.simulator_settings['points_per_cycle']
+        period = 1 / self.measurement_settings['probe_signal_frequency']
+        rms_voltage = self.measurement_settings['max_voltage'] / np.sqrt(2)
+        step_time = period / points
+        end_time = period * self.simulator_settings['cycles']
+        skip_points = points * self.simulator_settings['skip_cycles']
 
-        period = 1 / self.probe_signal_frequency
-        rms_voltage = self.max_voltage / np.sqrt(2)
         circuit.R('cs', 'input', 'input_dummy', 0)  # Rcs
         circuit.AcLine('Current', circuit.gnd, 'input_dummy',
                        rms_voltage=rms_voltage,
-                       frequency=self.probe_signal_frequency)
+                       frequency=self.measurement_settings['probe_signal_frequency'])
+
         simulator = circuit.simulator()
-        analysis = simulator.transient(step_time=period / lendata,
-                                       end_time=period * self.num_cycles)
-        analysis.input_dummy = analysis.input_dummy[len(analysis.input_dummy) - lendata:len(analysis.input_dummy)]
-        analysis.VCurrent = analysis.VCurrent[len(analysis.VCurrent) - lendata:len(analysis.VCurrent)]
+        analysis = simulator.transient(step_time=step_time, end_time=end_time)
+
+        analysis.input_dummy = analysis.input_dummy[skip_points:]
+        analysis.VCurrent = analysis.VCurrent[skip_points:]
         return analysis
 
     def save_ivc(self, circuit, analysis, path):
         currents = list(analysis.VCurrent.as_ndarray())
         voltages = list(analysis.input_dummy.as_ndarray())
-        measurement = {'measurement_settings': self.measurement_settings_json,
+        measurement = {'measurement_settings': self.measurement_settings,
                        'comment': circuit.plot_title.replace('\n', ' '),
                        'currents': currents,
                        'voltages': voltages}
@@ -65,11 +64,11 @@ class SimulatorIVC:
         plt.figtext(0.62, 0.45, s=circuit.plot_title)
         if plot_measurements_settings:
             sett = '[Measurements settings]\n'
-            sett += f'probe_signal_frequency: {self.probe_signal_frequency}\n'
-            sett += f'max_voltage: {self.max_voltage}\n'
-            sett += f'precharge_delay: {self.precharge_delay}\n'
-            sett += f'sampling_rate: {self.sampling_rate}\n'
-            sett += f'internal_resistance: {self.sampling_rate}\n'
+            for sett_name, sett_value in self.measurement_settings.items():
+                sett += f'{sett_name}: {sett_value}\n'
+            # sett += '[Simulator settings]\n'
+            # for sett_name, sett_value in self.simulator_settings.items():
+            #     sett += f'{sett_name}: {sett_value}\n'
             plt.figtext(0.62, 0.65, s=sett)
 
         plt.savefig(path, dpi=100)

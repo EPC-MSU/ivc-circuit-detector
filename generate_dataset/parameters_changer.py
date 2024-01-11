@@ -34,21 +34,19 @@ class CleanSpiceParser(SpiceParser):
 
 
 class ParametersChanger:
-    def __init__(self, base_cir_path, params_settings_path):
+    def __init__(self, base_cir_path, params_settings):
         """
         Class for iterating through all combinations of circuit parameters
         and creating .cir files with new parameters.
 
         :param base_cir_path: Path to base .cir file (circuit_classes/X/X.cir)
-        :param params_settings_path: Path to parameters intervals (generate_dataset/parameters_variations.json)
+        :param params_settings: Dict with parameters intervals
         """
-        self.params_settings_path = params_settings_path
-        self.base_cir_path = base_cir_path
-
         self.circuits = []
+        self.base_cir_path = base_cir_path
         self.circuit_class = os.path.splitext(os.path.basename(self.base_cir_path))[0]
         self._base_circuit = CleanSpiceParser(path=base_cir_path).build_circuit()
-        self._params_settings = self._load_params_settings()
+        self._params_settings = params_settings
         self._settings = self._generate_intervals(self._filter_settings(self._params_settings))
         self._assist_settings = self._make_assist_settings()
 
@@ -75,10 +73,6 @@ class ParametersChanger:
         for i, circuit in enumerate(self.circuits):
             with open(os.path.join(base_folder, f'{i}.cir'), 'w+') as f:
                 f.write(str(circuit))
-
-    def _load_params_settings(self):
-        with open(self.params_settings_path, 'r') as f:
-            return json.load(f)
 
     def _params_combination_to_circuit(self, params_combination):
         # Make from combination-dict a circuit with this params.

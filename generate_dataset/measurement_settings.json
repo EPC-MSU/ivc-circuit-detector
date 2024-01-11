@@ -1,22 +1,19 @@
 {
-  "measurement_variants": [
+  "title": "Measurement settings and IVC-simulation parameters file",
+  "description": "Measurement settings and IVC-simulation parameters file",
+  "version": "0.0.1",
+  "variants": [
     {
-      "variant": 1,
       "name": "measurement_1000_03",
+      "simulator_settings": {
+        "points_per_cycle": 200,
+        "cycles": 3,
+        "skip_cycles": 1,
+        "noise": 1.0
+      },
       "measurement_settings": {
         "probe_signal_frequency": 1000,
         "max_voltage": 0.3,
-        "precharge_delay": 1,
-        "sampling_rate": 1,
-        "internal_resistance": 1
-      }
-    },
-    {
-      "variant": 2,
-      "name": "measurement_500_05",
-      "measurement_settings": {
-        "probe_signal_frequency": 500,
-        "max_voltage": 0.5,
         "precharge_delay": 1,
         "sampling_rate": 1,
         "internal_resistance": 1
