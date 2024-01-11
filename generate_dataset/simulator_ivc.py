@@ -5,12 +5,14 @@ from epcore.filemanager import save_board_to_ufiv
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PySpice.Spice.Parser import Circuit
 
+UFIV_VERSION = "1.1.2"
+
 
 class SimulatorIVC:
     def __init__(self, measurement_variant):
         self.measurement_settings = measurement_variant['measurement_settings']
         self.simulator_settings = measurement_variant['simulator_settings']
-        self.SNR = 40
+        self.snr = 40
 
     def get_ivc(self, circuit: Circuit):
         points = self.simulator_settings['points_per_cycle']
@@ -41,7 +43,7 @@ class SimulatorIVC:
                        'voltages': voltages}
 
         # TODO: Fix epcore, actually PCB not saved into ufiv
-        board = {'version': "1.1.2",
+        board = {'version': UFIV_VERSION,
                  "PCB": {"pcb_name": "myclass", "comment": "super_comment"},
                  'elements': [{'pins': [{'iv_curves': [measurement], 'x': 0, 'y': 0}]}]}
         epcore_board = Board.create_from_json(board)
@@ -75,14 +77,14 @@ class SimulatorIVC:
         plt.clf()
         plt.close('all')
 
-    @staticmethod
-    def add_noise(analysis, SNR=40):
-        avg_V_db = 10 * np.log10(np.mean(np.array(analysis.input_dummy, dtype=float) ** 2))
-        avg_Vnoise_db = avg_V_db - SNR
-        Vnoise = np.random.normal(0, np.sqrt(10 ** (avg_Vnoise_db / 10)), len(analysis.input_dummy))
-        analysis.input_dummy = np.array(analysis.input_dummy, dtype=float) + Vnoise
-        avg_I_db = 10 * np.log10(np.mean(np.array(analysis.VCurrent, dtype=float) ** 2))
-        avg_Inoise_db = avg_I_db - SNR
-        Inoise = np.random.normal(0, np.sqrt(10 ** (avg_Inoise_db / 10)), len(analysis.VCurrent))
-        analysis.VCurrent = np.array(analysis.VCurrent, dtype=float) + Inoise
+    def add_noise(self, analysis):
+        avg_v_db = 10 * np.log10(np.mean(np.array(analysis.input_dummy, dtype=float) ** 2))
+        avg_v_noise_db = avg_v_db - self.snr
+        v_noise = np.random.normal(0, np.sqrt(10 ** (avg_v_noise_db / 10)), len(analysis.input_dummy))
+        analysis.input_dummy = np.array(analysis.input_dummy, dtype=float) + v_noise
+
+        avg_i_db = 10 * np.log10(np.mean(np.array(analysis.VCurrent, dtype=float) ** 2))
+        avg_i_noise_db = avg_i_db - self.snr
+        i_noise = np.random.normal(0, np.sqrt(10 ** (avg_i_noise_db / 10)), len(analysis.VCurrent))
+        analysis.VCurrent = np.array(analysis.VCurrent, dtype=float) + i_noise
         return analysis

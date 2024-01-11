@@ -2,7 +2,7 @@
 
 #### **Did you find a bug?**
 
-Please create a new feature on github project page. Be sure to include a title and clear 
+Please create a new feature on GitHub project page. Be sure to include a title and clear 
 description, as much relevant information as possible, and a code sample or an executable test case 
 demonstrating the expected behavior that is not occurring.
 
