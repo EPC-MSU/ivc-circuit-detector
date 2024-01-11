@@ -19,6 +19,7 @@ def generate_dataset(save_png=False):
         measurements_settings = json.load(f)
 
     classes_folders = glob.glob(os.path.join(BASE_CLASSES_FOLDER, "*"))
+    # classes_folders = ['circuit_classes\\R'] # For only one class
 
     for measurement_variant in measurements_settings['variants']:
         for circuit_class_folder in classes_folders:

@@ -5,11 +5,6 @@
   "variants": [
     {
       "name": "measurement_1000_03",
-      "simulator_settings": {
-        "points_per_cycle": 200,
-        "cycles": 2,
-        "skip_cycles": 1
-      },
       "noise_settings": {
         "without_noise": true,
         "with_noise": 1,
@@ -18,8 +13,8 @@
       "measurement_settings": {
         "probe_signal_frequency": 1000,
         "max_voltage": 0.3,
-        "precharge_delay": 1,
-        "sampling_rate": 1,
+        "precharge_delay": 0.001,
+        "sampling_rate": 200,
         "internal_resistance": 1
       }
     }

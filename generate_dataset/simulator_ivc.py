@@ -11,18 +11,20 @@ UFIV_VERSION = "1.1.2"
 class SimulatorIVC:
     def __init__(self, measurement_variant):
         self.measurement_settings = measurement_variant['measurement_settings']
-        self.simulator_settings = measurement_variant['simulator_settings']
-        self.snr = 40
 
     def get_ivc(self, circuit: Circuit):
-        points = self.simulator_settings['points_per_cycle']
+        points_per_second = self.measurement_settings['sampling_rate']
         period = 1 / self.measurement_settings['probe_signal_frequency']
         rms_voltage = self.measurement_settings['max_voltage'] / np.sqrt(2)
-        step_time = period / points
-        end_time = period * self.simulator_settings['cycles']
-        skip_points = points * self.simulator_settings['skip_cycles']
 
-        circuit.R('cs', 'input', 'input_dummy', 0)  # Rcs
+        step_time = period / points_per_second
+        end_time = period + self.measurement_settings['precharge_delay']
+
+        skip_points = int(self.measurement_settings['precharge_delay'] *
+                          points_per_second *
+                          self.measurement_settings['probe_signal_frequency'])
+
+        circuit.R('cs', 'input', 'input_dummy', self.measurement_settings['internal_resistance'])
         circuit.AcLine('Current', circuit.gnd, 'input_dummy',
                        rms_voltage=rms_voltage,
                        frequency=self.measurement_settings['probe_signal_frequency'])
@@ -30,8 +32,8 @@ class SimulatorIVC:
         simulator = circuit.simulator()
         analysis = simulator.transient(step_time=step_time, end_time=end_time)
 
-        voltages = analysis.input_dummy[skip_points:].as_ndarray()
-        currents = analysis.VCurrent[skip_points:].as_ndarray()
+        voltages = analysis.input_dummy[skip_points+8:].as_ndarray()
+        currents = analysis.VCurrent[skip_points+8:].as_ndarray()
         return voltages, currents
 
     def save_ivc(self, title, analysis, path):
@@ -78,6 +80,7 @@ class SimulatorIVC:
 
     @staticmethod
     def add_noise(analysis, snr):
+        # We calculate noise independently for current and voltage based on RMS values and the same SNR
         voltages, currents = analysis
         avg_v_db = 10 * np.log10(np.mean(np.array(voltages, dtype=float) ** 2))
         avg_v_noise_db = avg_v_db - snr
