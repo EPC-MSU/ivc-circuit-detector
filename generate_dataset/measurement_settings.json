@@ -8,7 +8,7 @@
       "noise_settings": {
         "without_noise": true,
         "with_noise": 1,
-        "level": 40.0
+        "SNR": 40.0
       },
       "measurement_settings": {
         "probe_signal_frequency": 1000,

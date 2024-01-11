@@ -33,6 +33,7 @@ def generate_dataset(save_png=False):
             changer.dump_circuits_on_disk(output_path)
 
             simulator = SimulatorIVC(measurement_variant)
+
             for i, circuit in enumerate(changer.circuits):
                 print(output_path, i)
                 analysis = simulator.get_ivc(circuit)
@@ -43,7 +44,7 @@ def generate_dataset(save_png=False):
                     simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
 
                 for noise_number in range(measurement_variant['noise_settings']['with_noise']):
-                    analysis = simulator.add_noise(analysis, measurement_variant['noise_settings']['level'])
+                    analysis = simulator.add_noise(analysis, measurement_variant['noise_settings']['SNR'])
 
                     uzf_name = os.path.join(output_path, f'{i}_noise{noise_number}.uzf')
                     png_name = os.path.join(output_path, f'{i}_noise{noise_number}.png')
