@@ -30,61 +30,62 @@ class SimulatorIVC:
         simulator = circuit.simulator()
         analysis = simulator.transient(step_time=step_time, end_time=end_time)
 
-        analysis.input_dummy = analysis.input_dummy[skip_points:]
-        analysis.VCurrent = analysis.VCurrent[skip_points:]
-        return analysis
+        voltages = analysis.input_dummy[skip_points:].as_ndarray()
+        currents = analysis.VCurrent[skip_points:].as_ndarray()
+        return voltages, currents
 
-    def save_ivc(self, circuit, analysis, path):
-        currents = list(analysis.VCurrent.as_ndarray())
-        voltages = list(analysis.input_dummy.as_ndarray())
+    def save_ivc(self, title, analysis, path):
+        voltages, currents = analysis
         measurement = {'measurement_settings': self.measurement_settings,
-                       'comment': circuit.plot_title.replace('\n', ' '),
-                       'currents': currents,
-                       'voltages': voltages}
+                       'comment': title.replace('\n', ' '),
+                       'currents': list(currents),
+                       'voltages': list(voltages)}
 
-        # TODO: Fix epcore, actually PCB not saved into ufiv
         board = {'version': UFIV_VERSION,
-                 "PCB": {"pcb_name": "myclass", "comment": "super_comment"},
                  'elements': [{'pins': [{'iv_curves': [measurement], 'x': 0, 'y': 0}]}]}
         epcore_board = Board.create_from_json(board)
         save_board_to_ufiv(path, epcore_board)
 
-    def save_plot(self, circuit, analysis, path, png_path, plot_measurements_settings=True):
+    def save_plot(self, title, analysis, path, scheme_png_path, save_png=False):
+        if not save_png:
+            return
         fig, ax = plt.subplots(1, figsize=(8, 4))
         plt.subplots_adjust(right=0.5, bottom=0.15)
         ax.grid()
-        ax.plot(analysis.input_dummy, analysis.VCurrent)
+        voltages, currents = analysis
+        ax.plot(voltages, currents)
         ax.set_xlabel('Voltage [V]')
         ax.set_ylabel('Current [A]')
 
-        arr_img = plt.imread(png_path)
+        arr_img = plt.imread(scheme_png_path)
         im = OffsetImage(arr_img, zoom=.5)
         ab = AnnotationBbox(im, (1, 0), xycoords='axes fraction', box_alignment=(-0.68, 0.1))
         ax.add_artist(ab)
         ax.set_title('IV-Characteristic')
 
-        plt.figtext(0.62, 0.45, s=circuit.plot_title)
-        if plot_measurements_settings:
-            sett = '[Measurements settings]\n'
-            for sett_name, sett_value in self.measurement_settings.items():
-                sett += f'{sett_name}: {sett_value}\n'
-            # sett += '[Simulator settings]\n'
-            # for sett_name, sett_value in self.simulator_settings.items():
-            #     sett += f'{sett_name}: {sett_value}\n'
-            plt.figtext(0.62, 0.65, s=sett)
+        plt.figtext(0.62, 0.45, s=title)
+        sett = '[Measurements settings]\n'
+        for sett_name, sett_value in self.measurement_settings.items():
+            sett += f'{sett_name}: {sett_value}\n'
+        # sett += '[Simulator settings]\n'
+        # for sett_name, sett_value in self.simulator_settings.items():
+        #     sett += f'{sett_name}: {sett_value}\n'
+        plt.figtext(0.62, 0.65, s=sett)
 
         plt.savefig(path, dpi=100)
         plt.clf()
         plt.close('all')
 
-    def add_noise(self, analysis):
-        avg_v_db = 10 * np.log10(np.mean(np.array(analysis.input_dummy, dtype=float) ** 2))
-        avg_v_noise_db = avg_v_db - self.snr
-        v_noise = np.random.normal(0, np.sqrt(10 ** (avg_v_noise_db / 10)), len(analysis.input_dummy))
-        analysis.input_dummy = np.array(analysis.input_dummy, dtype=float) + v_noise
+    @staticmethod
+    def add_noise(analysis, snr):
+        voltages, currents = analysis
+        avg_v_db = 10 * np.log10(np.mean(np.array(voltages, dtype=float) ** 2))
+        avg_v_noise_db = avg_v_db - snr
+        v_noise = np.random.normal(0, np.sqrt(10 ** (avg_v_noise_db / 10)), len(voltages))
+        voltages = np.array(voltages, dtype=float) + v_noise
 
-        avg_i_db = 10 * np.log10(np.mean(np.array(analysis.VCurrent, dtype=float) ** 2))
-        avg_i_noise_db = avg_i_db - self.snr
-        i_noise = np.random.normal(0, np.sqrt(10 ** (avg_i_noise_db / 10)), len(analysis.VCurrent))
-        analysis.VCurrent = np.array(analysis.VCurrent, dtype=float) + i_noise
-        return analysis
+        avg_i_db = 10 * np.log10(np.mean(np.array(currents, dtype=float) ** 2))
+        avg_i_noise_db = avg_i_db - snr
+        i_noise = np.random.normal(0, np.sqrt(10 ** (avg_i_noise_db / 10)), len(currents))
+        currents = np.array(currents, dtype=float) + i_noise
+        return voltages, currents

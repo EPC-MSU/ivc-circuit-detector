@@ -7,9 +7,13 @@
       "name": "measurement_1000_03",
       "simulator_settings": {
         "points_per_cycle": 200,
-        "cycles": 3,
-        "skip_cycles": 1,
-        "noise": 1.0
+        "cycles": 2,
+        "skip_cycles": 1
+      },
+      "noise_settings": {
+        "without_noise": true,
+        "with_noise": 1,
+        "level": 40.0
       },
       "measurement_settings": {
         "probe_signal_frequency": 1000,

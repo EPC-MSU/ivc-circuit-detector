@@ -12,7 +12,7 @@
         "nominal" : {
           "type": "exponential_interval",
           "interval": [1, 100000000],
-          "interval_points": 10
+          "interval_points": 20
         }
       }
     ],
@@ -23,9 +23,9 @@
         "cir_key": null,
         "cir_unit": "N",
         "nominal" : {
-          "type": "uniform_interval",
+          "type": "exponential_interval",
           "interval": [1, 1000],
-          "interval_points": 10
+          "interval_points": 20
         }
       }
     ],
