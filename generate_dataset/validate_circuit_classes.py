@@ -1,5 +1,5 @@
-import json
 import glob
+import json
 import os.path
 
 from generate_dataset.dataset_generator import MEASUREMENTS_SETTINGS_PATH

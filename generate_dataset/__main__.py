@@ -2,7 +2,8 @@ import argparse
 import logging
 
 from generate_dataset.dataset_generator import generate_dataset
-from generate_dataset.validate_circuit_classes import validate_circuit_classes, validate_measurement_settings
+from generate_dataset.validate_circuit_classes import (
+    validate_circuit_classes, validate_measurement_settings)
 
 logging.basicConfig(format="%(asctime)s %(message)s", datefmt="[%Y-%m-%d %H:%M:%S]", level=logging.INFO)
 
