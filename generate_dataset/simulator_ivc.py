@@ -1,9 +1,9 @@
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-from PySpice.Spice.Parser import Circuit
+import numpy as np
 from epcore.elements import Board
 from epcore.filemanager import save_board_to_ufiv
+from matplotlib.offsetbox import AnnotationBbox, OffsetImage
+from PySpice.Spice.Parser import Circuit
 
 
 class SimulatorIVC:

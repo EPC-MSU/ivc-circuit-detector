@@ -1,13 +1,13 @@
-import os
 import copy
+import itertools
 import json
 import logging
-import itertools
+import os
 
 import numpy as np
 from PySpice.Logging import Logging
-from PySpice.Spice.Parser import Element, Model, SpiceParser
 from PySpice.Spice.Netlist import DeviceModel
+from PySpice.Spice.Parser import Element, Model, SpiceParser
 
 Logging.setup_logging(logging_level=logging.ERROR)
 
@@ -27,7 +27,7 @@ class CleanSpiceParser(SpiceParser):
     def _build_circuit(circuit, statements, ground):
         for statement in statements:
             if isinstance(statement, Element):
-                if statement.name != 'rint':
+                if statement.name != 'rint':  # Print. Letter 'P' detected as other instruction
                     statement.build(circuit, ground)
             elif isinstance(statement, Model):
                 statement.build(circuit)

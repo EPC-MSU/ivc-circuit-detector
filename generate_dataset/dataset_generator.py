@@ -1,9 +1,9 @@
+import glob
 import json
 import os
-import glob
 
 from generate_dataset.parameters_changer import ParametersChanger
-from generate_dataset.simulate_ivc import SimulatorIVC
+from generate_dataset.simulator_ivc import SimulatorIVC
 
 GENERATE_SETTINGS_PATH = 'generate_dataset\\parameters_variations.json'
 MEASUREMENTS_SETTINGS_PATH = 'generate_dataset\\measurement_settings.json'
