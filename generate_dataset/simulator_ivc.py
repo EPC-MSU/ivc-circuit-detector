@@ -13,7 +13,8 @@ class SimulatorIVC:
         self.measurement_settings = measurement_variant['measurement_settings']
 
     def get_ivc(self, circuit: Circuit):
-        points_per_second = self.measurement_settings['sampling_rate']
+        points_per_second = int(self.measurement_settings['sampling_rate'] / \
+                                self.measurement_settings['probe_signal_frequency'])
         period = 1 / self.measurement_settings['probe_signal_frequency']
         rms_voltage = self.measurement_settings['max_voltage'] / np.sqrt(2)
 
@@ -32,19 +33,22 @@ class SimulatorIVC:
         simulator = circuit.simulator()
         analysis = simulator.transient(step_time=step_time, end_time=end_time)
 
-        voltages = analysis.input_dummy[skip_points+8:].as_ndarray()
-        currents = analysis.VCurrent[skip_points+8:].as_ndarray()
+        voltages = analysis.input_dummy[skip_points + 8:].as_ndarray()
+        currents = analysis.VCurrent[skip_points + 8:].as_ndarray()
         return voltages, currents
 
     def save_ivc(self, title, analysis, path):
         voltages, currents = analysis
         measurement = {'measurement_settings': self.measurement_settings,
-                       'comment': title.replace('\n', ' '),
                        'currents': list(currents),
                        'voltages': list(voltages)}
 
         board = {'version': UFIV_VERSION,
-                 'elements': [{'pins': [{'iv_curves': [measurement], 'x': 0, 'y': 0}]}]}
+                 'elements': [{'pins': [{'iv_curves': [measurement],
+                                         'x': 0,
+                                         'y': 0,
+                                         'comment': title.replace('\n', ' ')
+                                         }]}]}
         epcore_board = Board.create_from_json(board)
         save_board_to_ufiv(path, epcore_board)
 

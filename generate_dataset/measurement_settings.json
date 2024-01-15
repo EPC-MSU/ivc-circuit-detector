@@ -4,18 +4,18 @@
   "version": "0.0.1",
   "variants": [
     {
-      "name": "measurement_1000_03",
+      "name": "measurement_norm",
       "noise_settings": {
         "without_noise": true,
-        "with_noise": 1,
+        "with_noise": 0,
         "SNR": 40.0
       },
       "measurement_settings": {
-        "probe_signal_frequency": 1000,
-        "max_voltage": 0.3,
+        "sampling_rate": 100000,
+        "internal_resistance": 475.0,
+        "max_voltage": 3.3,
         "precharge_delay": 0.001,
-        "sampling_rate": 200,
-        "internal_resistance": 1
+        "probe_signal_frequency": 1000
       }
     }
   ]
