@@ -11,11 +11,11 @@
         "SNR": 40.0
       },
       "measurement_settings": {
-        "sampling_rate": 100000,
-        "internal_resistance": 475.0,
-        "max_voltage": 3.3,
+        "sampling_rate": 10000,
+        "internal_resistance": 4750.0,
+        "max_voltage": 5.0,
         "precharge_delay": 0.001,
-        "probe_signal_frequency": 1000
+        "probe_signal_frequency": 100
       }
     }
   ]
