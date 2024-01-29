@@ -25,6 +25,7 @@ class SimulatorIVC:
                           points_per_second *
                           self.measurement_settings['probe_signal_frequency'])
 
+        # TODO: Swap lines and generate input is not equal measurement input
         circuit.R('cs', 'input', 'input_dummy', self.measurement_settings['internal_resistance'])
         circuit.AcLine('Current', circuit.gnd, 'input_dummy',
                        rms_voltage=rms_voltage,
