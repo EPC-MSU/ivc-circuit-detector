@@ -11,7 +11,7 @@
         "SNR": 40.0
       },
       "measurement_settings": {
-        "sampling_rate": 10000,
+        "sampling_rate": 100,
         "internal_resistance": 475.0,
         "max_voltage": 3.3,
         "precharge_delay": 0.001,
@@ -41,7 +41,7 @@
         "SNR": 40.0
       },
       "measurement_settings": {
-        "sampling_rate": 100000,
+        "sampling_rate": 10000000,
         "internal_resistance": 47500.0,
         "max_voltage": 12.0,
         "precharge_delay": 0.001,
