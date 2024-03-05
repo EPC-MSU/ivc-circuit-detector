@@ -10,14 +10,14 @@
 
 #### 1. Установка зависимостей
 
-Строго [Python 3.6.8](https://www.python.org/downloads/release/python-368/)
+Строго [Python 3.6.8 x64](https://www.python.org/downloads/release/python-368/)
 
 Запустить консоль от имени администратора.
 
 Перейти в корень этого репозитория и создать виртуальное окружение (путь к питону 3.6.8 может отличаться):
 
 ```commandline
-C:\dev\Python36\python.exe -m venv venv
+python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 ```
