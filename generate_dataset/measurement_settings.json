@@ -4,7 +4,22 @@
   "version": "0.0.1",
   "variants": [
     {
-      "name": "measurement_norm",
+      "name": "measurement_1Hz_high_3.3v",
+      "noise_settings": {
+        "without_noise": true,
+        "with_noise": 0,
+        "SNR": 40.0
+      },
+      "measurement_settings": {
+        "sampling_rate": 10000,
+        "internal_resistance": 475.0,
+        "max_voltage": 3.3,
+        "precharge_delay": 0.001,
+        "probe_signal_frequency": 1
+      }
+    },
+    {
+      "name": "measurement_100Hz_middle_5v",
       "noise_settings": {
         "without_noise": true,
         "with_noise": 0,
@@ -16,6 +31,21 @@
         "max_voltage": 5.0,
         "precharge_delay": 0.001,
         "probe_signal_frequency": 100
+      }
+    },
+    {
+      "name": "measurement_100KHz_low_12v",
+      "noise_settings": {
+        "without_noise": true,
+        "with_noise": 0,
+        "SNR": 40.0
+      },
+      "measurement_settings": {
+        "sampling_rate": 100000,
+        "internal_resistance": 47500.0,
+        "max_voltage": 12.0,
+        "precharge_delay": 0.001,
+        "probe_signal_frequency": 100000
       }
     }
   ]

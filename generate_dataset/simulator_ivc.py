@@ -13,7 +13,7 @@ class SimulatorIVC:
         self.measurement_settings = measurement_variant['measurement_settings']
 
     def get_ivc(self, circuit: Circuit):
-        points_per_second = int(self.measurement_settings['sampling_rate'] / \
+        points_per_second = int(self.measurement_settings['sampling_rate'] /
                                 self.measurement_settings['probe_signal_frequency'])
         period = 1 / self.measurement_settings['probe_signal_frequency']
         rms_voltage = self.measurement_settings['max_voltage'] / np.sqrt(2)
