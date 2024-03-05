@@ -34,7 +34,7 @@ class SimulatorIVC:
         simulator = circuit.simulator()
         analysis = simulator.transient(step_time=step_time, end_time=end_time)
 
-        voltages = analysis.input_dummy[skip_points + 8:].as_ndarray()
+        voltages = analysis.input[skip_points + 8:].as_ndarray()
         currents = analysis.VCurrent[skip_points + 8:].as_ndarray()
         return voltages, currents
 
