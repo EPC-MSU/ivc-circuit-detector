@@ -11,8 +11,8 @@
         "cir_unit": "K",
         "nominal" : {
           "type": "exponential_interval",
-          "interval": [1, 100000],
-          "interval_points": 6
+          "interval": [0.1, 10],
+          "interval_points": 3
         }
       }
     ],
@@ -23,9 +23,8 @@
         "cir_key": null,
         "cir_unit": "N",
         "nominal" : {
-          "type": "exponential_interval",
-          "interval": [1, 1000],
-          "interval_points": 4
+          "type": "constant",
+          "value": 10
         }
       }
     ],
