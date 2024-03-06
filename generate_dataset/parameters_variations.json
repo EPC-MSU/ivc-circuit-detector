@@ -12,7 +12,7 @@
         "nominal" : {
           "type": "exponential_interval",
           "interval": [1, 100000],
-          "interval_points": 7
+          "interval_points": 6
         }
       }
     ],

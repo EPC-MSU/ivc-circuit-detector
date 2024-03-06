@@ -1,0 +1,15 @@
+* Qucs 2.1.0 C:/dev/ivc-circuit-detector/circuit_classes/DCR/DCR.sch
+.INCLUDE "C:/Program Files (x86)/Qucs-S/share/qucs-s/xspice_cmlib/include/ngspice_mathfunc.inc"
+* Qucs 2.1.0  C:/dev/ivc-circuit-detector/circuit_classes/DCR/DCR.sch
+C1 input 0  1N 
+D1 0 input DMOD_D1 AREA=1.0 Temp=26.85
+.MODEL DMOD_D1 D (Is=1e-15 N=1 Cj0=1e-14 M=0.5 Vj=0.7 Fc=0.5 Rs=0 Tt=0 Kf=0 Af=1 Bv=10 Ibv=0.001 Xti=3 Eg=1.11 Tcv=0 Trs=0 Ttt1=0 Ttt2=0 Tm1=0 Tm2=0 Tnom=26.85 )
+R1 input 0  1K
+.control
+set filetype=ascii
+op
+print all > spice4qucs.cir.dc_op
+destroy all
+quit
+.endc
+.end
