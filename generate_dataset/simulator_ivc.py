@@ -41,7 +41,8 @@ class SimulatorIVC:
         voltages, currents = analysis
         measurement = {'measurement_settings': self.measurement_settings,
                        'currents': list(currents),
-                       'voltages': list(voltages)}
+                       'voltages': list(voltages),
+                       'is_reference': True}
 
         board = {'version': UFIV_VERSION,
                  'elements': [{'pins': [{'iv_curves': [measurement],
