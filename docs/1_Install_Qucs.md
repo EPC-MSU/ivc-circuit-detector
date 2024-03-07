@@ -8,5 +8,7 @@ Qucs - программа для построения электронных с�
 
 Статья на хабре о [Qucs-S](https://habr.com/ru/articles/778666/)
 
+Руководство о [видах моделирования в Qucs-S на Хабре](https://habr.com/ru/articles/789452/?utm_source=telegram_habr&utm_medium=social&utm_campaign=/ru/articles/789452/)
+
 ([Умерший Qucs](https://qucs.sourceforge.net/))
 
