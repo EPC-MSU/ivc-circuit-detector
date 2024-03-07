@@ -4,8 +4,7 @@ __pycache__/
 *$py.class
 .idea
 .vscode
-dataset/
-dataset_real/
+dataset*/
 
 # C extensions
 *.so
