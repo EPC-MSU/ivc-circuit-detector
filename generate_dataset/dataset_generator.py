@@ -11,7 +11,7 @@ MEASUREMENTS_SETTINGS_PATH = 'generate_dataset\\measurement_settings.json'
 DATASET_FOLDER = 'dataset'
 
 
-def generate_dataset(save_png=False):
+def generate_dataset(save_png=False, debug=False):
     with open(PARAMETERS_SETTINGS_PATH, 'r') as f:
         parameters_settings = json.load(f)
 
@@ -19,17 +19,16 @@ def generate_dataset(save_png=False):
         measurements_settings = json.load(f)
 
     classes_folders = glob.glob(os.path.join(BASE_CLASSES_FOLDER, "*"))
-    # classes_folders = ['circuit_classes\\R'] # For only one class
 
     for measurement_variant in measurements_settings['variants']:
         for circuit_class_folder in classes_folders:
             _, cls = os.path.split(circuit_class_folder)
             cir_path = os.path.join(circuit_class_folder, cls + '.cir')
             scheme_png_path = os.path.join(circuit_class_folder, cls + '.png')
-            output_path = os.path.join(DATASET_FOLDER, measurement_variant['name'], cls)
+            output_path = os.path.join(DATASET_FOLDER, cls, measurement_variant['name'])
 
             changer = ParametersChanger(cir_path, parameters_settings)
-            changer.generate_circuits()
+            changer.generate_circuits(debug)
             changer.dump_circuits_on_disk(output_path)
 
             simulator = SimulatorIVC(measurement_variant)

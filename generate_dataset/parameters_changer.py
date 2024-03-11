@@ -49,7 +49,7 @@ class ParametersChanger:
         self._settings = self._generate_intervals(self._filter_settings(self._params_settings))
         self._assist_settings = self._make_assist_settings()
 
-    def generate_circuits(self) -> None:
+    def generate_circuits(self, debug) -> None:
         """
         Generate all possible parameters combinations according to settings in
         `self.params_settings_path` for specific circuit from `self.base_cir_path`
@@ -61,7 +61,29 @@ class ParametersChanger:
         params_combinations = self._get_params_combinations(self._settings)
         for params_combination in params_combinations:
             circuit = self._params_combination_to_circuit(params_combination)
-            self.circuits.append(circuit)
+            if not debug:
+                self.circuits.append(circuit)
+            else:
+                if circuit.plot_title == 'Class: [DC]\nD_1N4148_1(Tnom=26.85)\nC1(10N)':
+                    self.circuits.append(circuit)
+                if circuit.plot_title == 'Class: [DC(D_R)]\nR1(1K)\nD_1N4148_2(Tnom=26.85)\nC1(10N)\nD_1N4148_1(Tnom=26.85)':
+                    self.circuits.append(circuit)
+                if circuit.plot_title == 'Class: [DCR]\nD_1N4148_1(Tnom=26.85)\nC1(10N)\nR1(0.1000K)':
+                    self.circuits.append(circuit)
+                if circuit.plot_title == 'Class: [DD_R]\nD_1N4148_1(Tnom=26.85)\nR1(0.1000K)\nD_1N4148_2(Tnom=26.85)':
+                    self.circuits.append(circuit)
+                if circuit.plot_title == 'Class: [DR]\nD_1N4148_1(Tnom=26.85)\nR1(10K)':
+                    self.circuits.append(circuit)
+                if circuit.plot_title == 'Class: [D_C]\nC1(10N)\nD_1N4148_1(Tnom=26.85)':
+                    self.circuits.append(circuit)
+                if circuit.plot_title == 'Class: [R]\nR1(1K)':
+                    self.circuits.append(circuit)
+                if circuit.plot_title == 'Class: [RC]\nC1(10N)\nR1(10K)':
+                    self.circuits.append(circuit)
+                if circuit.plot_title == 'Class: [R_D]\nD_1N4148_1(Tnom=26.85)\nR1(1K)':
+                    self.circuits.append(circuit)
+                if circuit.plot_title == 'Class: [R_C]\nR1(0.5100K)\nC1(10N)':
+                    self.circuits.append(circuit)
 
     def dump_circuits_on_disk(self, base_folder) -> None:
         """
@@ -166,6 +188,9 @@ class ParametersChanger:
                                      nominal['interval'][1],
                                      nominal['interval_points'],
                                      endpoint=True))
+        elif nominal['type'] == 'list':
+            a = list(nominal['value'])
+            return a
         else:
             raise UnknownIntervalType(f'Interval {nominal["type"]} unknown')
 

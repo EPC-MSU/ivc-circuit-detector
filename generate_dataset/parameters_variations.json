@@ -10,9 +10,8 @@
         "cir_key": null,
         "cir_unit": "K",
         "nominal" : {
-          "type": "exponential_interval",
-          "interval": [0.1, 10],
-          "interval_points": 3
+          "type": "list",
+          "value": [0.1, 0.510, 1, 10]
         }
       }
     ],
@@ -25,19 +24,6 @@
         "nominal" : {
           "type": "constant",
           "value": 10
-        }
-      }
-    ],
-    "L": [
-      {
-        "_name": "inductance",
-        "_units": "mH",
-        "cir_key": null,
-        "cir_unit": "M",
-        "nominal" : {
-          "type": "uniform_interval",
-          "interval": [1, 100],
-          "interval_points": 3
         }
       }
     ],
