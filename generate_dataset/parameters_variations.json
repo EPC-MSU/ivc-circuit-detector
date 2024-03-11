@@ -1,7 +1,7 @@
 {
   "title": "Dataset generation parameters settings file",
   "description": "This file used for variate element parameters in .cir files. For example, resistance of R1 in some schema will be variate in interval from 1 to 100000000 with 10 point in exponential scale. This action produces 10 new .cir files with different resistance.",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "elements" : {
     "R": [
       {
@@ -42,44 +42,14 @@
       }
     ],
     "D": [
-      {
-        "_name": "saturation current",
-        "_units": "A",
-        "cir_key": "Is",
+       {
+        "_name": "Normal temperature",
+        "_units": "C",
+        "cir_key": "Tnom",
         "cir_unit": null,
         "nominal" : {
           "type": "constant",
-          "value": 1e-15
-        }
-      },
-      {
-        "_name": "junction potential",
-        "_units": "V",
-        "cir_key": "Vj",
-        "cir_unit": null,
-        "nominal" : {
-          "type": "constant",
-          "value": 0.7
-        }
-      },
-      {
-        "_name": "reverse breakdown voltage",
-        "_units": "V",
-        "cir_key": "Bv",
-        "cir_unit": null,
-        "nominal" : {
-          "type": "constant",
-          "value": 10
-        }
-      },
-      {
-        "_name": "current at reverse breakdown voltage",
-        "_units": "V",
-        "cir_key": "Ibv",
-        "cir_unit": null,
-        "nominal" : {
-          "type": "constant",
-          "value": 0.7
+          "value": 26.85
         }
       }
     ]
