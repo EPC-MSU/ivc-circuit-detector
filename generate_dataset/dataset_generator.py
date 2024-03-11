@@ -25,7 +25,7 @@ def generate_dataset(save_png=False, debug=False):
             _, cls = os.path.split(circuit_class_folder)
             cir_path = os.path.join(circuit_class_folder, cls + '.cir')
             scheme_png_path = os.path.join(circuit_class_folder, cls + '.png')
-            output_path = os.path.join(DATASET_FOLDER, cls, measurement_variant['name'])
+            output_path = os.path.join(DATASET_FOLDER, measurement_variant['name'], cls)
 
             changer = ParametersChanger(cir_path, parameters_settings)
             changer.generate_circuits(debug)
