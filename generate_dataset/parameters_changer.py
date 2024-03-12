@@ -63,7 +63,7 @@ class ParametersChanger:
             circuit = self._params_combination_to_circuit(params_combination)
             if not debug:
                 self.circuits.append(circuit)
-            else:
+            else:  # Debug filter - select only cooper plate parameters
                 if circuit.plot_title == 'Class: [DC]\nD_1N4148_1(Tnom=26.85)\nC1(10N)':
                     self.circuits.append(circuit)
                 if circuit.plot_title == 'Class: [DC(D_R)]\nR1(1K)\nD_1N4148_2' \

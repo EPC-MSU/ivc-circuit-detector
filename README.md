@@ -28,10 +28,10 @@ PySpice по умолчанию требует NgSpice как разделяем
 Поэтому скачиваем руками:
 
 * Переходим на [сайт](https://sourceforge.net/projects/ngspice/files/ng-spice-rework/old-releases/34/)
-* Скачиваем файл [ngspice-34_dll_64.zip](https://sourceforge.net/projects/ngspice/files/ng-spice-rework/old-releases/34/ngspice-34_dll_64.zip/download) (ждём 5 секунд)
+* Скачиваем файл `ngspice-34_dll_64.zip` (ждём 5 секунд)
 * Распаковываем из архива папку `Spice64_dll`  в `venv\Lib\site-packages\PySpice\Spice\NgSpice`
 
-Далее переходим в подпапку распакованной папки, создаём symlink:
+Далее переходим в подпапку распакованной папки, создаём symlink (от администратора):
 
 ```commandline
 cd venv\Lib\site-packages\PySpice\Spice\NgSpice\Spice64_dll\dll-vs

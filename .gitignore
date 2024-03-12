@@ -6,6 +6,7 @@ __pycache__/
 .vscode
 dataset*/
 cutter.py
+dataset_real_vs_simulation.zip
 
 # C extensions
 *.so
