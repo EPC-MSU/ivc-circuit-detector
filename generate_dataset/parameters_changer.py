@@ -66,7 +66,8 @@ class ParametersChanger:
             else:
                 if circuit.plot_title == 'Class: [DC]\nD_1N4148_1(Tnom=26.85)\nC1(10N)':
                     self.circuits.append(circuit)
-                if circuit.plot_title == 'Class: [DC(D_R)]\nR1(1K)\nD_1N4148_2(Tnom=26.85)\nC1(10N)\nD_1N4148_1(Tnom=26.85)':
+                if circuit.plot_title == 'Class: [DC(D_R)]\nR1(1K)\nD_1N4148_2' \
+                                         '(Tnom=26.85)\nC1(10N)\nD_1N4148_1(Tnom=26.85)':
                     self.circuits.append(circuit)
                 if circuit.plot_title == 'Class: [DCR]\nD_1N4148_1(Tnom=26.85)\nC1(10N)\nR1(0.1000K)':
                     self.circuits.append(circuit)

@@ -13,28 +13,39 @@ class SimulatorIVC:
         self.measurement_settings = measurement_variant['measurement_settings']
 
     def get_ivc(self, circuit: Circuit):
-        points_per_second = int(self.measurement_settings['sampling_rate'] /
-                                self.measurement_settings['probe_signal_frequency'])
-        period = 1 / self.measurement_settings['probe_signal_frequency']
         rms_voltage = self.measurement_settings['max_voltage'] / np.sqrt(2)
 
-        step_time = period / points_per_second
-        end_time = period + self.measurement_settings['precharge_delay']
+        # ssr = simulator sampling rate
+        ssr = self.measurement_settings['sampling_rate']
 
-        skip_points = int(self.measurement_settings['precharge_delay'] *
-                          points_per_second *
-                          self.measurement_settings['probe_signal_frequency'])
+        # TODO: Dirty quality increase, but set-up EPLab for new settings is worse
+        if ssr == 2000000:
+            ssr = 10000000
+
+        ssr*=2
 
         circuit.R('cs', 'input', 'input_dummy', self.measurement_settings['internal_resistance'])
-        circuit.AcLine('Current', circuit.gnd, 'input_dummy',
-                       rms_voltage=rms_voltage,
+        circuit.AcLine('Current', circuit.gnd, 'input_dummy', rms_voltage=rms_voltage,
                        frequency=self.measurement_settings['probe_signal_frequency'])
+
+        period = 1 / self.measurement_settings['probe_signal_frequency']
+
+        step_time = period / (ssr / self.measurement_settings['probe_signal_frequency'])
+        end_time = period + self.measurement_settings['precharge_delay']
 
         simulator = circuit.simulator()
         analysis = simulator.transient(step_time=step_time, end_time=end_time)
 
-        voltages = analysis.input[skip_points + 8:].as_ndarray()
-        currents = analysis.VCurrent[skip_points + 8:].as_ndarray()
+        need_points = int(ssr / self.measurement_settings['probe_signal_frequency']) - 1
+
+        voltages = analysis.input[-need_points:].as_ndarray()
+        currents = analysis.VCurrent[-need_points:].as_ndarray()
+
+        voltages = np.append(voltages, voltages[0])  # Close points circle
+        currents = np.append(currents, currents[0])  # Close points circle
+
+        assert len(voltages) == 200
+        assert len(currents) == 200
         return voltages, currents
 
     def save_ivc(self, title, analysis, path):

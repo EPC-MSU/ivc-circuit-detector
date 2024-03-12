@@ -14,7 +14,7 @@
         "sampling_rate": 100,
         "internal_resistance": 475.0,
         "max_voltage": 5.0,
-        "precharge_delay": 0.500,
+        "precharge_delay": 1.0,
         "probe_signal_frequency": 1
       }
     },
@@ -29,7 +29,7 @@
         "sampling_rate": 10000,
         "internal_resistance": 4750.0,
         "max_voltage": 5.0,
-        "precharge_delay": 0.01,
+        "precharge_delay": 0.1,
         "probe_signal_frequency": 100
       }
     },
@@ -59,7 +59,7 @@
         "sampling_rate": 1000000,
         "internal_resistance": 4750.0,
         "max_voltage": 5.0,
-        "precharge_delay": 0.01,
+        "precharge_delay": 0.001,
         "probe_signal_frequency": 10000
       }
     },
@@ -74,7 +74,7 @@
         "sampling_rate": 2000000,
         "internal_resistance": 47500.0,
         "max_voltage": 12.0,
-        "precharge_delay": 0.001,
+        "precharge_delay": 0.0001,
         "probe_signal_frequency": 100000
       }
     }

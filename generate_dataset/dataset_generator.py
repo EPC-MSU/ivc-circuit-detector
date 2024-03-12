@@ -29,8 +29,7 @@ def generate_dataset(save_png=False, debug=False):
 
             changer = ParametersChanger(cir_path, parameters_settings)
             changer.generate_circuits(debug)
-            if not debug:
-                changer.dump_circuits_on_disk(output_path)
+            changer.dump_circuits_on_disk(output_path)
 
             simulator = SimulatorIVC(measurement_variant)
 
