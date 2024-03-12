@@ -34,6 +34,21 @@
       }
     },
     {
+      "name": "measurement_1kHz_middle_5v",
+      "noise_settings": {
+        "without_noise": true,
+        "with_noise": 0,
+        "SNR": 40.0
+      },
+      "measurement_settings": {
+        "sampling_rate": 100000,
+        "internal_resistance": 4750.0,
+        "max_voltage": 5.0,
+        "precharge_delay": 0.01,
+        "probe_signal_frequency": 1000
+      }
+    },
+    {
       "name": "measurement_10kHz_middle_5v",
       "noise_settings": {
         "without_noise": true,
@@ -46,21 +61,6 @@
         "max_voltage": 5.0,
         "precharge_delay": 0.01,
         "probe_signal_frequency": 10000
-      }
-    },
-    {
-      "name": "measurement_100kHz_high_5v",
-      "noise_settings": {
-        "without_noise": true,
-        "with_noise": 0,
-        "SNR": 40.0
-      },
-      "measurement_settings": {
-        "sampling_rate": 2000000,
-        "internal_resistance": 47500.0,
-        "max_voltage": 5.0,
-        "precharge_delay": 0.001,
-        "probe_signal_frequency": 100000
       }
     },
     {
