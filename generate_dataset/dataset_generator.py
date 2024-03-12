@@ -42,7 +42,7 @@ def generate_dataset(save_png=False, debug=False):
                     simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
                     simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
 
-                for noise_number in range(measurement_variant['noise_settings']['with_noise']):
+                for noise_number in range(measurement_variant['noise_settings']['with_noise_copies']):
                     analysis = simulator.add_noise(analysis, measurement_variant['noise_settings']['SNR'])
 
                     uzf_name = os.path.join(output_path, f'{cls}_params{i}_noise{noise_number}.uzf')

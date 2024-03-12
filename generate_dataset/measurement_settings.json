@@ -7,7 +7,7 @@
       "name": "measurement_1Hz_low_5v",
       "noise_settings": {
         "without_noise": true,
-        "with_noise": 0,
+        "with_noise_copies": 0,
         "SNR": 40.0
       },
       "measurement_settings": {
@@ -22,7 +22,7 @@
       "name": "measurement_100Hz_middle_5v",
       "noise_settings": {
         "without_noise": true,
-        "with_noise": 0,
+        "with_noise_copies": 0,
         "SNR": 40.0
       },
       "measurement_settings": {
@@ -37,7 +37,7 @@
       "name": "measurement_1kHz_middle_5v",
       "noise_settings": {
         "without_noise": true,
-        "with_noise": 0,
+        "with_noise_copies": 0,
         "SNR": 40.0
       },
       "measurement_settings": {
@@ -52,7 +52,7 @@
       "name": "measurement_10kHz_middle_5v",
       "noise_settings": {
         "without_noise": true,
-        "with_noise": 0,
+        "with_noise_copies": 0,
         "SNR": 40.0
       },
       "measurement_settings": {
@@ -67,7 +67,7 @@
       "name": "measurement_100kHz_high_12v",
       "noise_settings": {
         "without_noise": true,
-        "with_noise": 0,
+        "with_noise_copies": 0,
         "SNR": 40.0
       },
       "measurement_settings": {
