@@ -29,7 +29,8 @@ def generate_dataset(save_png=False, debug=False):
 
             changer = ParametersChanger(cir_path, parameters_settings)
             changer.generate_circuits(debug)
-            changer.dump_circuits_on_disk(output_path)
+            if not debug:
+                changer.dump_circuits_on_disk(output_path)
 
             simulator = SimulatorIVC(measurement_variant)
 
@@ -42,10 +43,10 @@ def generate_dataset(save_png=False, debug=False):
                     simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
                     simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
 
-                # for noise_number in range(measurement_variant['noise_settings']['with_noise']):
-                #     analysis = simulator.add_noise(analysis, measurement_variant['noise_settings']['SNR'])
+                for noise_number in range(measurement_variant['noise_settings']['with_noise']):
+                    analysis = simulator.add_noise(analysis, measurement_variant['noise_settings']['SNR'])
 
-                    # uzf_name = os.path.join(output_path, f'{i}_noise{noise_number}.uzf')
-                    # png_name = os.path.join(output_path, f'{i}_noise{noise_number}.png')
-                    # simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
-                    # simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
+                    uzf_name = os.path.join(output_path, f'{i}_noise{noise_number}.uzf')
+                    png_name = os.path.join(output_path, f'{i}_noise{noise_number}.png')
+                    simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
+                    simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)

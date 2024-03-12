@@ -91,9 +91,9 @@ class ParametersChanger:
         :param base_folder: Folder to save .cir files. (If not exist - it's ok)
         """
         os.makedirs(base_folder, exist_ok=True)
-        # for i, circuit in enumerate(self.circuits):
-        #     with open(os.path.join(base_folder, f'{i}.cir'), 'w+') as f:
-        #         f.write(str(circuit))
+        for i, circuit in enumerate(self.circuits):
+            with open(os.path.join(base_folder, f'{i}.cir'), 'w+') as f:
+                f.write(str(circuit))
 
     def _params_combination_to_circuit(self, params_combination):
         # Make from combination-dict a circuit with this params.
