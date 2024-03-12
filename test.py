@@ -1,10 +1,16 @@
-# Cut screenshots from EPLab
-# import numpy as np
-# import os
-# import glob
+# Temp file for work with dataset
+# Will be removed soon
+
+import os
+import glob
+from epcore.filemanager import load_board_from_ufiv
+import numpy as np
+import matplotlib.pyplot as plt
+# from epcore.elements import Board
+# from epcore.filemanager import save_board_to_ufiv
+# from matplotlib.ticker import MultipleLocator
 # import cv2
-#
-#
+
 # files = glob.glob('C:\\dev\\ivc-circuit-detector\\dataset_human_compare\\original\\*\\*.png')
 #
 # for file in files:
@@ -14,15 +20,7 @@
 #     if not os.path.exists(os.path.split(filename)[0]):
 #         os.makedirs(os.path.split(filename)[0])
 #     cv2.imwrite(filename, img)
-import glob
 
-from epcore.elements import Board
-from epcore.filemanager import save_board_to_ufiv, load_board_from_ufiv
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator
-import glob
-import os
 
 PATH = "dataset/measurement_1kHz_middle_5v/*.uzf"
 files = glob.glob(PATH)

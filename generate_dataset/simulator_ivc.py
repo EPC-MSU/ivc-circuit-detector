@@ -22,7 +22,7 @@ class SimulatorIVC:
         if ssr == 2000000:
             ssr = 10000000
 
-        ssr*=2
+        ssr *= 2  # Increase quality
 
         circuit.R('cs', 'input', 'input_dummy', self.measurement_settings['internal_resistance'])
         circuit.AcLine('Current', circuit.gnd, 'input_dummy', rms_voltage=rms_voltage,
