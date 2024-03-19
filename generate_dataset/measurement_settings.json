@@ -1,14 +1,16 @@
 {
   "title": "Measurement settings and IVC-simulation parameters file",
   "description": "Measurement settings and IVC-simulation parameters file",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "variants": [
     {
+      "enabled": true,
       "name": "measurement_1Hz_low_5v",
       "noise_settings": {
-        "without_noise": true,
-        "with_noise_copies": 0,
-        "SNR": 40.0
+        "without_noise": false,
+        "with_noise_copies": 1,
+        "horizontal_noise": 0.6,
+        "vertical_noise": 0.008
       },
       "measurement_settings": {
         "sampling_rate": 100,
@@ -19,11 +21,13 @@
       }
     },
     {
+      "enabled": false,
       "name": "measurement_100Hz_middle_5v",
       "noise_settings": {
-        "without_noise": true,
-        "with_noise_copies": 0,
-        "SNR": 40.0
+        "without_noise": false,
+        "with_noise_copies": 1,
+        "horizontal_noise": 0.3,
+        "vertical_noise": 0.0005
       },
       "measurement_settings": {
         "sampling_rate": 10000,
@@ -34,11 +38,13 @@
       }
     },
     {
+      "enabled": true,
       "name": "measurement_1kHz_middle_5v",
       "noise_settings": {
-        "without_noise": true,
-        "with_noise_copies": 0,
-        "SNR": 40.0
+        "without_noise": false,
+        "with_noise_copies": 1,
+        "horizontal_noise": 0.3,
+        "vertical_noise": 0.0005
       },
       "measurement_settings": {
         "sampling_rate": 100000,
@@ -49,11 +55,13 @@
       }
     },
     {
+      "enabled": false,
       "name": "measurement_10kHz_middle_5v",
       "noise_settings": {
-        "without_noise": true,
-        "with_noise_copies": 0,
-        "SNR": 40.0
+        "without_noise": false,
+        "with_noise_copies": 1,
+        "horizontal_noise": 0.3,
+        "vertical_noise": 0.0005
       },
       "measurement_settings": {
         "sampling_rate": 1000000,
@@ -64,11 +72,13 @@
       }
     },
     {
+      "enabled": true,
       "name": "measurement_100kHz_high_12v",
       "noise_settings": {
-        "without_noise": true,
-        "with_noise_copies": 0,
-        "SNR": 40.0
+        "without_noise": false,
+        "with_noise_copies": 1,
+        "horizontal_noise": 0.6,
+        "vertical_noise": 0.00005
       },
       "measurement_settings": {
         "sampling_rate": 2000000,
