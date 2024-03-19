@@ -95,16 +95,22 @@ class SimulatorIVC:
         plt.close('all')
 
     @staticmethod
-    def add_noise(analysis, snr):
+    def add_noise(analysis, noise_settings):
         # We calculate noise independently for current and voltage based on RMS values and the same SNR
         voltages, currents = analysis
-        avg_v_db = 10 * np.log10(np.mean(np.array(voltages, dtype=float) ** 2))
-        avg_v_noise_db = avg_v_db - snr
-        v_noise = np.random.normal(0, np.sqrt(10 ** (avg_v_noise_db / 10)), len(voltages))
-        voltages = np.array(voltages, dtype=float) + v_noise
+        # avg_v_db = 10 * np.log10(np.mean(np.array(voltages, dtype=float) ** 2))
+        # avg_v_noise_db = avg_v_db - SNR
+        # v_noise = np.random.normal(0, np.sqrt(10 ** (avg_v_noise_db / 10)), len(voltages))
+        # voltages = np.array(voltages, dtype=float) + v_noise
+        #
+        # avg_i_db = 10 * np.log10(np.mean(np.array(currents, dtype=float) ** 2))
+        # avg_i_noise_db = avg_i_db - SNR
+        # i_noise = np.random.normal(0, np.sqrt(10 ** (avg_i_noise_db / 10)), len(currents))
+        # currents = np.array(currents, dtype=float) + i_noise
 
-        avg_i_db = 10 * np.log10(np.mean(np.array(currents, dtype=float) ** 2))
-        avg_i_noise_db = avg_i_db - snr
-        i_noise = np.random.normal(0, np.sqrt(10 ** (avg_i_noise_db / 10)), len(currents))
+        i_noise = np.random.normal(0, noise_settings['vertical_noise'], len(currents))
+        v_noise = np.random.normal(0, noise_settings['horizontal_noise'], len(voltages))
+
+        voltages = np.array(voltages, dtype=float) + v_noise
         currents = np.array(currents, dtype=float) + i_noise
         return voltages, currents

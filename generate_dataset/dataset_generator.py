@@ -21,6 +21,8 @@ def generate_dataset(save_png=False, debug=False):
     classes_folders = glob.glob(os.path.join(BASE_CLASSES_FOLDER, "*"))
 
     for measurement_variant in measurements_settings['variants']:
+        if measurement_variant.get('enabled', False) is False:
+            continue
         for circuit_class_folder in classes_folders:
             _, cls = os.path.split(circuit_class_folder)
             cir_path = os.path.join(circuit_class_folder, cls + '.cir')
@@ -43,7 +45,7 @@ def generate_dataset(save_png=False, debug=False):
                     simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
 
                 for noise_number in range(measurement_variant['noise_settings']['with_noise_copies']):
-                    analysis = simulator.add_noise(analysis, measurement_variant['noise_settings']['SNR'])
+                    analysis = simulator.add_noise(analysis, measurement_variant['noise_settings'])
 
                     uzf_name = os.path.join(output_path, f'{cls}_params{i}_noise{noise_number}.uzf')
                     png_name = os.path.join(output_path, f'{cls}_params{i}_noise{noise_number}.png')

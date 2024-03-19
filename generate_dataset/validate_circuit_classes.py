@@ -34,6 +34,6 @@ def validate_measurement_settings():
     for measurement_variant in measurements_settings['variants']:
         name = measurement_variant['name']
         if not (measurement_variant['noise_settings']['without_noise'] or
-                len(measurement_variant['noise_settings']['with_noise_copies']) > 0):
+                measurement_variant['noise_settings']['with_noise_copies'] > 0):
             raise ValueError(f'Both noise generation variants disabled for {name} in {MEASUREMENTS_SETTINGS_PATH}'
                              f'\n"without_noise" can\'t be false while "with_noise_copies" equal 0')
