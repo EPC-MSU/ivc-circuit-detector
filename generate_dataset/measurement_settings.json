@@ -38,7 +38,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "name": "measurement_1kHz_middle_5v",
       "noise_settings": {
         "without_noise": false,
@@ -55,10 +55,10 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "name": "measurement_10kHz_middle_5v",
       "noise_settings": {
-        "without_noise": false,
+        "without_noise": true,
         "with_noise_copies": 1,
         "horizontal_noise": 0.00035,
         "vertical_noise": 0.166972709220574e-06
@@ -75,8 +75,8 @@
       "enabled": true,
       "name": "measurement_100kHz_high_12v",
       "noise_settings": {
-        "without_noise": false,
-        "with_noise_copies": 1,
+        "without_noise": true,
+        "with_noise_copies": 0,
         "horizontal_noise": 0.00035,
         "vertical_noise": 0.166972709220574e-06
       },

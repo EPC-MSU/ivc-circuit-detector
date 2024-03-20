@@ -5,8 +5,6 @@ from epcore.filemanager import save_board_to_ufiv
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PySpice.Spice.Parser import Circuit
 
-UFIV_VERSION = "1.1.2"
-
 
 class SimulatorIVC:
     def __init__(self, measurement_variant):
@@ -25,6 +23,7 @@ class SimulatorIVC:
         ssr *= 2  # Increase quality
 
         circuit.R('cs', 'input', 'input_dummy', self.measurement_settings['internal_resistance'])
+        # circuit.C('coaxial_probes', circuit.gnd, 'input_dummy', 204*10**-12)  # 28*10**-12
         circuit.AcLine('Current', circuit.gnd, 'input_dummy', rms_voltage=rms_voltage,
                        frequency=self.measurement_settings['probe_signal_frequency'])
 
@@ -55,7 +54,7 @@ class SimulatorIVC:
                        'voltages': list(voltages),
                        'is_reference': True}
 
-        board = {'version': UFIV_VERSION,
+        board = {'version': "1.1.2",
                  'elements': [{'pins': [{'iv_curves': [measurement],
                                          'x': 0,
                                          'y': 0,
