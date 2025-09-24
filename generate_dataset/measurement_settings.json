@@ -1,72 +1,82 @@
 {
   "title": "Measurement settings and IVC-simulation parameters file",
   "description": "Measurement settings and IVC-simulation parameters file",
-  "version": "0.2.0",
+  "version": "0.3.0",
+  "info": [
+    "The noises from real eyepoint(ivm) measurer depend on the measurement settings",
+    "See Feature #123988 for details",
+    "Current noise (vertical_noise) for low sensitivity is 20 microA per Volt",
+    "Current noise (vertical_noise) for middle sensitivity is 1 microA per Volt",
+    "Current noise (vertical_noise) for high sensitivity is 0.1 microA per Volt",
+    "Voltage noise  (horizontal_noise) is 0.005 V",
+    "Sampling rate for real ivm device is 100 times higher than probe_signal_frequency",
+    "with the exceprion of 100 kHz, when sampling rate is limited to 2Msps"
+  ],
   "variants": [
     {
       "enabled": true,
-      "name": "measurement_1Hz_low_5v",
+      "name": "measurement_1Hz_low_3.3v",
       "noise_settings": {
         "without_noise": false,
         "with_noise_copies": 1,
-        "horizontal_noise": 0.00035,
-        "vertical_noise": 0.166972709220574e-06
+        "horizontal_noise": 0.005,
+        "vertical_noise": 66e-6
       },
       "measurement_settings": {
         "sampling_rate": 100,
-        "internal_resistance": 475.0,
-        "max_voltage": 5.0,
-        "precharge_delay": 1.0,
+        "internal_resistance": 475,
+        "max_voltage": 3.3,
+        "precharge_delay": 1,
         "probe_signal_frequency": 1
       }
     },
     {
-      "enabled": false,
-      "name": "measurement_100Hz_middle_5v",
+      "enabled": true,
+      "name": "measurement_10Hz_middle_5v",
       "noise_settings": {
         "without_noise": false,
         "with_noise_copies": 1,
-        "horizontal_noise": 0.00035,
-        "vertical_noise": 0.166972709220574e-06
+        "horizontal_noise": 0.005,
+        "vertical_noise": 5e-6
       },
       "measurement_settings": {
-        "sampling_rate": 10000,
-        "internal_resistance": 4750.0,
-        "max_voltage": 5.0,
+        "sampling_rate": 1000,
+        "internal_resistance": 4750,
+        "max_voltage": 5,
         "precharge_delay": 0.1,
-        "probe_signal_frequency": 100
+        "probe_signal_frequency": 10
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "name": "measurement_1kHz_middle_5v",
       "noise_settings": {
         "without_noise": false,
         "with_noise_copies": 1,
-        "horizontal_noise": 0.00035,
-        "vertical_noise": 0.166972709220574e-06
+        "horizontal_noise": 0.005,
+        "vertical_noise": 5e-6
       },
       "measurement_settings": {
         "sampling_rate": 100000,
-        "internal_resistance": 4750.0,
-        "max_voltage": 5.0,
+        "internal_resistance": 4750,
+        "max_voltage": 5,
         "precharge_delay": 0.01,
         "probe_signal_frequency": 1000
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "name": "measurement_10kHz_middle_5v",
       "noise_settings": {
         "without_noise": true,
         "with_noise_copies": 1,
-        "horizontal_noise": 0.00035,
-        "vertical_noise": 0.166972709220574e-06
+        "horizontal_noise": 0.005,
+        "vertical_noise": 5e-6
       },
       "measurement_settings": {
         "sampling_rate": 1000000,
-        "internal_resistance": 4750.0,
-        "max_voltage": 5.0,
+        "internal_resistance": 4750,
+        "max_voltage": 5,
         "precharge_delay": 0.001,
         "probe_signal_frequency": 10000
       }
@@ -75,14 +85,14 @@
       "enabled": true,
       "name": "measurement_100kHz_high_12v",
       "noise_settings": {
-        "without_noise": true,
-        "with_noise_copies": 0,
-        "horizontal_noise": 0.00035,
-        "vertical_noise": 0.166972709220574e-06
+        "without_noise": false,
+        "with_noise_copies": 1,
+        "horizontal_noise": 0.005,
+        "vertical_noise": 1.2e-6
       },
       "measurement_settings": {
         "sampling_rate": 2000000,
-        "internal_resistance": 47500.0,
+        "internal_resistance": 47500,
         "max_voltage": 12.0,
         "precharge_delay": 0.0001,
         "probe_signal_frequency": 100000
