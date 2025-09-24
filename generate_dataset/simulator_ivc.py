@@ -74,6 +74,18 @@ class SimulatorIVC:
         ax.set_xlabel('Voltage [V]')
         ax.set_ylabel('Current [A]')
 
+        # Set fixed axis ranges based on measurement parameters
+        max_voltage = self.measurement_settings['max_voltage']
+        internal_resistance = self.measurement_settings['internal_resistance']
+
+        # X-axis: 20% wider than [-max_voltage, max_voltage]
+        x_range = max_voltage * 1.2
+        ax.set_xlim(-x_range, x_range)
+
+        # Y-axis: max_voltage / internal_resistance * 1.2, centered at 0
+        y_max = (max_voltage / internal_resistance) * 1.2
+        ax.set_ylim(-y_max, y_max)
+
         arr_img = plt.imread(scheme_png_path)
         im = OffsetImage(arr_img, zoom=.5)
         ab = AnnotationBbox(im, (1, 0), xycoords='axes fraction', box_alignment=(-0.68, 0.1))
