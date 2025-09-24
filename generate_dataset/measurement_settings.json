@@ -4,10 +4,11 @@
   "version": "0.3.0",
   "info": [
     "The noises from real eyepoint(ivm) measurer depend on the measurement settings",
-    "Current noise (vertical_noise) for low sensitivity is ...",
-    "Current noise (vertical_noise) for middle sensitivity is ...",
-    "Current noise (vertical_noise) for high sensitivity is ...",
-    "Voltage noise  (horizontal_noise) for 12V voltage range is 0.00035 V",
+    "See Feature #123988 for details",
+    "Current noise (vertical_noise) for low sensitivity is 20 microA per Volt",
+    "Current noise (vertical_noise) for middle sensitivity is 1 microA per Volt",
+    "Current noise (vertical_noise) for high sensitivity is 0.1 microA per Volt",
+    "Voltage noise  (horizontal_noise) is 0.005 V",
     "Sampling rate for real ivm device is 100 times higher than probe_signal_frequency",
     "with the exceprion of 100 kHz, when sampling rate is limited to 2Msps"
   ],
@@ -18,8 +19,8 @@
       "noise_settings": {
         "without_noise": false,
         "with_noise_copies": 1,
-        "horizontal_noise": 0.00035,
-        "vertical_noise": 1.66972709220574e-7
+        "horizontal_noise": 0.005,
+        "vertical_noise": 66e-6
       },
       "measurement_settings": {
         "sampling_rate": 100,
@@ -35,8 +36,8 @@
       "noise_settings": {
         "without_noise": false,
         "with_noise_copies": 1,
-        "horizontal_noise": 0.00035,
-        "vertical_noise": 1.66972709220574e-7
+        "horizontal_noise": 0.005,
+        "vertical_noise": 5e-6
       },
       "measurement_settings": {
         "sampling_rate": 1000,
@@ -52,8 +53,8 @@
       "noise_settings": {
         "without_noise": false,
         "with_noise_copies": 1,
-        "horizontal_noise": 0.00035,
-        "vertical_noise": 1.66972709220574e-7
+        "horizontal_noise": 0.005,
+        "vertical_noise": 5e-6
       },
       "measurement_settings": {
         "sampling_rate": 100000,
@@ -69,8 +70,8 @@
       "noise_settings": {
         "without_noise": true,
         "with_noise_copies": 1,
-        "horizontal_noise": 0.00035,
-        "vertical_noise": 1.66972709220574e-7
+        "horizontal_noise": 0.005,
+        "vertical_noise": 5e-6
       },
       "measurement_settings": {
         "sampling_rate": 1000000,
@@ -86,8 +87,8 @@
       "noise_settings": {
         "without_noise": false,
         "with_noise_copies": 1,
-        "horizontal_noise": 0.00035,
-        "vertical_noise": 1.66972709220574e-7
+        "horizontal_noise": 0.005,
+        "vertical_noise": 1.2e-6
       },
       "measurement_settings": {
         "sampling_rate": 2000000,
