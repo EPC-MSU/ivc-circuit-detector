@@ -39,11 +39,17 @@ pip install -r requirements.txt
 
 ### Dataset Generation
 ```bash
-# Generate dataset with PNG images
+# Generate dataset with PNG images (default output: dataset/)
 python -m generate_dataset --image
 
-# Generate dataset without images
+# Generate dataset without images (default output: dataset/)
 python -m generate_dataset
+
+# Generate dataset to custom directory
+python -m generate_dataset --dataset-dir custom_dataset/
+
+# Generate dataset with images to custom directory
+python -m generate_dataset --image --dataset-dir my_data/
 ```
 
 ### Testing

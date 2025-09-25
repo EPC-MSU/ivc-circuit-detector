@@ -8,10 +8,21 @@ from generate_dataset.simulator_ivc import SimulatorIVC
 BASE_CLASSES_FOLDER = "circuit_classes"
 PARAMETERS_SETTINGS_PATH = 'generate_dataset\\parameters_variations.json'
 MEASUREMENTS_SETTINGS_PATH = 'generate_dataset\\measurement_settings.json'
-DATASET_FOLDER = 'dataset'
+DEFAULT_DATASET_FOLDER = 'dataset'
 
 
-def generate_dataset(save_png=False, debug=False):
+def generate_dataset(save_png=False, debug=False, dataset_dir=None):
+    """
+    Generate dataset from circuit classes.
+    
+    Args:
+        save_png: Whether to save PNG images for each dataset file
+        debug: Debug mode flag
+        dataset_dir: Output directory for dataset (default: 'dataset')
+    """
+    if dataset_dir is None:
+        dataset_dir = DEFAULT_DATASET_FOLDER
+    
     with open(PARAMETERS_SETTINGS_PATH, 'r') as f:
         parameters_settings = json.load(f)
 
@@ -27,7 +38,7 @@ def generate_dataset(save_png=False, debug=False):
             _, cls = os.path.split(circuit_class_folder)
             cir_path = os.path.join(circuit_class_folder, cls + '.cir')
             scheme_png_path = os.path.join(circuit_class_folder, cls + '.png')
-            output_path = os.path.join(DATASET_FOLDER, measurement_variant['name'])
+            output_path = os.path.join(dataset_dir, measurement_variant['name'])
 
             changer = ParametersChanger(cir_path, parameters_settings)
             changer.generate_circuits(debug)
