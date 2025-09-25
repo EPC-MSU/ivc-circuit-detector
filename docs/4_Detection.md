@@ -22,7 +22,7 @@ The circuit_detector module provides the following main functions:
 - **extract_features_from_uzf(uzf_path)** - Converts UZF files to feature objects using EPCore
 - **train_classifier(dataset_dir, model_params=None)** - Trains ML model from dataset directory
 - **predict_circuit_class(uzf_path, classifier)** - Complete inference pipeline
-- **save_model(classifier, model_path)** / **load_model(model_path)** - Model persistence
+- **CircuitClassifier.save(model_path)** / **CircuitClassifier.load(model_path)** - Model persistence methods
 
 ### 4.1.3 CLI Usage
 
@@ -36,21 +36,21 @@ python -m circuit_detector train --dataset-dir dataset_train/ --output models/my
 #### Make Predictions
 
 ```bash
-# Predict using default model model/model.pt
+# Predict using default model model/model.pkl
 python -m circuit_detector predict --uzf-file test.uzf
 
 # Predict with custom model and verbose output
-python -m circuit_detector predict --model custom_model.pt --uzf-file test.uzf --verbose
+python -m circuit_detector predict --model custom_model.pkl --uzf-file test.uzf --verbose
 ```
 
 #### Evaluate Model Performance
 
 ```bash
-# Evaluate using default model model/model.pt
+# Evaluate using default model model/model.pkl
 python -m circuit_detector evaluate --test-dir dataset_validate/
 
 # Evaluate with custom model
-python -m circuit_detector evaluate --model custom_model.pt --test-dir dataset_validate/
+python -m circuit_detector evaluate --model custom_model.pkl --test-dir dataset_validate/
 ```
 
 #### Extract Features
@@ -80,25 +80,25 @@ python -m circuit_detector features --uzf-file test.uzf --verbose
 ### 4.1.5 Python API Usage
 
 ```python
-from circuit_detector import (
+from circuit_detector.detector import (
     extract_features_from_uzf,
     train_classifier,
-    save_model,
-    load_model,
-    predict_circuit_class
+    predict_circuit_class,
+    CircuitClassifier
 )
 
 # Extract features from UZF file
 features = extract_features_from_uzf("test.uzf")
+features.print(verbose=True)
 
 # Train a classifier
-classifier = train_classifier("dataset/", model_params={"key1": 0})
+classifier = train_classifier("dataset/", model_params={"n_estimators": 100})
 
-# Save the trained model
-save_model(classifier, "model/trained_classifier.pt")
+# Save the trained model using instance method
+classifier.save("model/trained_classifier.pkl")
 
-# Load a saved model
-loaded_classifier = load_model("model/trained_classifier.pt")
+# Load a saved model using class method
+loaded_classifier = CircuitClassifier.load("model/trained_classifier.pkl")
 
 # Make predictions
 result = predict_circuit_class("test.uzf", loaded_classifier)

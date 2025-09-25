@@ -11,6 +11,8 @@ import numpy as np
 import re
 from pathlib import Path
 from epcore.filemanager.ufiv import load_board_from_ufiv
+from sklearn.ensemble import RandomForestClassifier
+import pickle
 
 
 class CircuitFeatures:
@@ -130,7 +132,7 @@ class CircuitFeatures:
         if match:
             return match.group(1)
         else:
-            return ""
+            raise ValueError("UZF file comment does not contain class information.")
 
     def print(self, verbose: bool = False):
         """
@@ -167,9 +169,20 @@ class CircuitClassifier:
     inference and model management.
     """
 
-    def __init__(self):
-        """Initialize empty classifier."""
-        pass
+    def __init__(self, model=None, classes=None, class_to_index=None, trained=False):
+        """
+        Initialize classifier.
+
+        Args:
+            model: Trained RandomForest model (optional)
+            classes: List of class names (optional)
+            class_to_index: Dictionary mapping class names to indices (optional)
+            trained: Whether the classifier is trained (optional)
+        """
+        self.model = model
+        self._classes = classes if classes is not None else []
+        self._class_to_index = class_to_index if class_to_index is not None else {}
+        self._trained = trained
 
     def predict(self, features: CircuitFeatures) -> int:
         """
@@ -181,7 +194,11 @@ class CircuitClassifier:
         Returns:
             Class number representing the predicted circuit type
         """
-        pass
+        if not self._trained:
+            raise ValueError("Classifier must be trained before making predictions")
+
+        feature_vector = features.feature_vector.reshape(1, -1)
+        return self.model.predict(feature_vector)[0]
 
     def predict_proba(self, features: CircuitFeatures) -> np.ndarray:
         """
@@ -193,17 +210,100 @@ class CircuitClassifier:
         Returns:
             Array of probabilities for each class
         """
-        pass
+        if not self._trained:
+            raise ValueError("Classifier must be trained before making predictions")
+
+        feature_vector = features.feature_vector.reshape(1, -1)
+        return self.model.predict_proba(feature_vector)[0]
 
     @property
     def classes_(self) -> List[str]:
         """Get list of circuit class names."""
-        pass
+        return self._classes.copy()
 
     @property
     def n_classes(self) -> int:
         """Get number of circuit classes."""
-        pass
+        return len(self._classes)
+
+    def save(self, model_path: Union[str, Path]) -> None:
+        """
+        Save trained classifier model to file.
+
+        Args:
+            model_path: Path where to save the model file
+
+        Raises:
+            ValueError: If classifier is not trained
+            IOError: If unable to write to model_path
+        """
+        if not self._trained:
+            raise ValueError("Cannot save untrained classifier")
+
+        model_path = Path(model_path)
+
+        # Create directory if it doesn't exist
+        model_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Prepare data to save
+        model_data = {
+            'model': self.model,
+            'classes': self._classes,
+            'class_to_index': self._class_to_index,
+            'trained': self._trained
+        }
+
+        try:
+            with open(model_path, 'wb') as f:
+                pickle.dump(model_data, f)
+            print(f"Model saved successfully to {model_path}")
+        except Exception as e:
+            raise IOError(f"Failed to save model to {model_path}: {str(e)}")
+
+    @classmethod
+    def load(cls, model_path: Union[str, Path]) -> 'CircuitClassifier':
+        """
+        Load trained classifier model from file.
+
+        Args:
+            model_path: Path to saved model file
+
+        Returns:
+            Loaded CircuitClassifier instance ready for inference
+
+        Raises:
+            FileNotFoundError: If model file doesn't exist
+            ValueError: If model file is corrupted or incompatible
+        """
+        model_path = Path(model_path)
+        if not model_path.exists():
+            raise FileNotFoundError(f"Model file not found: {model_path}")
+
+        try:
+            with open(model_path, 'rb') as f:
+                model_data = pickle.load(f)
+
+            # Validate model data structure
+            required_keys = ['model', 'classes', 'class_to_index', 'trained']
+            for key in required_keys:
+                if key not in model_data:
+                    raise ValueError(f"Invalid model file: missing '{key}' data")
+
+            # Create and configure classifier
+            classifier = cls(
+                model=model_data['model'],
+                classes=model_data['classes'],
+                class_to_index=model_data['class_to_index'],
+                trained=model_data['trained']
+            )
+
+            print(f"Model loaded successfully from {model_path}")
+            print(f"Model contains {len(classifier._classes)} classes: {classifier._classes}")
+
+            return classifier
+
+        except Exception as e:
+            raise ValueError(f"Failed to load model from {model_path}: {str(e)}")
 
 
 def extract_features_from_uzf(uzf_path: Union[str, Path]) -> CircuitFeatures:
@@ -263,7 +363,7 @@ def extract_features_from_uzf(uzf_path: Union[str, Path]) -> CircuitFeatures:
 
 
 def train_classifier(dataset_dir: Union[str, Path],
-                    model_params: Optional[Dict[str, Any]] = None) -> CircuitClassifier:
+                     model_params: Optional[Dict[str, Any]] = None) -> CircuitClassifier:
     """
     Train a machine learning model on the dataset.
 
@@ -281,43 +381,104 @@ def train_classifier(dataset_dir: Union[str, Path],
         FileNotFoundError: If dataset directory doesn't exist
         ValueError: If dataset structure is invalid or insufficient data
     """
-    pass
+    dataset_path = Path(dataset_dir)
+    if not dataset_path.exists():
+        raise FileNotFoundError(f"Dataset directory not found: {dataset_dir}")
 
+    print(f"Scanning dataset directory: {dataset_path}")
 
-def save_model(classifier: CircuitClassifier, model_path: Union[str, Path]) -> None:
-    """
-    Save trained classifier model to file.
+    # Step 1: Find all UZF files and extract features
+    uzf_files = list(dataset_path.rglob("*.uzf"))
+    if not uzf_files:
+        raise ValueError(f"No UZF files found in dataset directory: {dataset_dir}")
 
-    Args:
-        classifier: Trained CircuitClassifier instance
-        model_path: Path where to save the model file
+    print(f"Found {len(uzf_files)} UZF files")
 
-    Raises:
-        ValueError: If classifier is not trained
-        IOError: If unable to write to model_path
-    """
-    pass
+    # Extract features from all UZF files
+    all_features = []
+    failed_files = []
 
+    for i, uzf_file in enumerate(uzf_files):
+        try:
+            features = extract_features_from_uzf(uzf_file)
+            all_features.append(features)
 
-def load_model(model_path: Union[str, Path]) -> CircuitClassifier:
-    """
-    Load trained classifier model from file.
+            # Progress reporting
+            if (i + 1) % 50 == 0:
+                print(f"Processed {i + 1}/{len(uzf_files)} files...")
 
-    Args:
-        model_path: Path to saved model file
+        except Exception as e:
+            print(f"Failed to extract features from {uzf_file}: {e}")
+            failed_files.append(uzf_file)
+            continue
 
-    Returns:
-        Loaded CircuitClassifier instance ready for inference
+    if not all_features:
+        raise ValueError("Failed to extract features from any UZF files")
 
-    Raises:
-        FileNotFoundError: If model file doesn't exist
-        ValueError: If model file is corrupted or incompatible
-    """
-    pass
+    print(f"Successfully extracted features from {len(all_features)} files")
+    if failed_files:
+        print(f"Failed to process {len(failed_files)} files")
+
+    # Step 2: Create set of unique class names
+    class_names_set = set()
+    for features in all_features:
+        if features.class_name:  # Only add non-empty class names
+            class_names_set.add(features.class_name)
+        else:
+            raise ValueError(f"An object without class name have been found with comment = {features.comment}")
+
+    # Convert to sorted list for consistent ordering
+    unique_classes = sorted(list(class_names_set))
+    print(f"Found {len(unique_classes)} unique circuit classes: {unique_classes}")
+
+    # Create class name to index mapping
+    class_to_index = {class_name: idx for idx, class_name in enumerate(unique_classes)}
+
+    # Step 3: Prepare training data
+    x = []  # Feature vectors
+    y = []  # Class indices
+
+    for features in all_features:
+        if features.class_name in class_to_index:  # Only include valid classes
+            x.append(features.feature_vector)
+            y.append(class_to_index[features.class_name])
+
+    x = np.array(x)
+    y = np.array(y)
+
+    print(f"Training data shape: X={x.shape}, y={y.shape}")
+
+    # Step 4: Train Random Forest model
+    if model_params is None:
+        model_params = {
+            'n_estimators': 100,
+            'random_state': 42,
+            'max_depth': 10,
+            'min_samples_split': 5,
+            'min_samples_leaf': 2
+        }
+
+    print(f"Training Random Forest with parameters: {model_params}")
+
+    rf_model = RandomForestClassifier(**model_params)
+    rf_model.fit(x, y)
+
+    # Step 5: Create and configure classifier
+    classifier = CircuitClassifier(
+        model=rf_model,
+        classes=unique_classes,
+        class_to_index=class_to_index,
+        trained=True
+    )
+
+    print(f"Training completed successfully!")
+    print(f"Model trained on {len(x)} samples with {len(unique_classes)} classes")
+
+    return classifier
 
 
 def predict_circuit_class(uzf_path: Union[str, Path],
-                         classifier: CircuitClassifier) -> Dict[str, Any]:
+                          classifier: CircuitClassifier) -> Dict[str, Any]:
     """
     Complete pipeline function: extract features and predict circuit class.
 
@@ -339,4 +500,27 @@ def predict_circuit_class(uzf_path: Union[str, Path],
         FileNotFoundError: If UZF file doesn't exist
         ValueError: If UZF file is invalid or classifier not trained
     """
-    pass
+    # Step 1: Extract features from UZF file
+    features = extract_features_from_uzf(uzf_path)
+
+    # Step 2: Get prediction and probabilities
+    class_id = classifier.predict(features)
+    probabilities = classifier.predict_proba(features)
+
+    # Step 3: Get class name from class_id
+    class_name = classifier.classes_[class_id]
+
+    # Step 4: Calculate confidence as the highest probability
+    confidence = float(np.max(probabilities))
+
+    # Step 5: Create comprehensive result dictionary
+    result = {
+        'class_id': int(class_id),
+        'class_name': class_name,
+        'confidence': confidence,
+        'probabilities': probabilities.tolist(),
+        'feature_count': len(features.feature_vector),
+        'uzf_path': str(uzf_path)
+    }
+
+    return result

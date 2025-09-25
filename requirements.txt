@@ -1,4 +1,5 @@
 matplotlib
 PySpice
 numpy
+sklearn
 git+https://github.com/EPC-MSU/EPCore

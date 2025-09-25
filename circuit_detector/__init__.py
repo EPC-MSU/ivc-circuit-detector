@@ -10,8 +10,6 @@ from .detector import (
     CircuitClassifier,
     extract_features_from_uzf,
     train_classifier,
-    save_model,
-    load_model,
     predict_circuit_class
 )
 
@@ -19,10 +17,8 @@ __version__ = "0.1.0"
 
 __all__ = [
     "CircuitFeatures",
-    "CircuitClassifier", 
+    "CircuitClassifier",
     "extract_features_from_uzf",
     "train_classifier",
-    "save_model",
-    "load_model",
     "predict_circuit_class"
 ]
