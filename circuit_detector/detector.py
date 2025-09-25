@@ -6,6 +6,7 @@ It includes functions for feature extraction, model training, inference, and mod
 """
 
 from typing import Dict, List, Union, Optional, Any
+from collections import OrderedDict
 import numpy as np
 from pathlib import Path
 from epcore.filemanager.ufiv import load_board_from_ufiv
@@ -34,15 +35,80 @@ class CircuitFeatures:
         self.voltages = voltages
         self.currents = currents
 
+        # Extract features as an ordered dictionary (name -> value)
+        self._features = self._extract_features()
+
     @property
     def feature_vector(self) -> np.ndarray:
         """Get the feature vector as numpy array."""
-        pass
+        return np.array(list(self._features.values()))
 
     @property
     def feature_names(self) -> List[str]:
         """Get names of the extracted features."""
-        pass
+        return list(self._features.keys())
+
+    def _extract_features(self) -> OrderedDict:
+        """
+        Extract numerical features from I-V curve data.
+
+        This implementation extracts statistical features from the voltage and current
+        arrays and stores them in an ordered dictionary to ensure feature names
+        and values are always paired correctly.
+
+        Returns:
+            OrderedDict mapping feature names to their values
+        """
+        features = OrderedDict()
+
+        # Statistical features from voltages
+        features['voltage_mean'] = np.mean(self.voltages)
+        features['voltage_std'] = np.std(self.voltages)
+        features['voltage_min'] = np.min(self.voltages)
+        features['voltage_max'] = np.max(self.voltages)
+        features['voltage_median'] = np.median(self.voltages)
+
+        # Statistical features from currents
+        features['current_mean'] = np.mean(self.currents)
+        features['current_std'] = np.std(self.currents)
+        features['current_min'] = np.min(self.currents)
+        features['current_max'] = np.max(self.currents)
+        features['current_median'] = np.median(self.currents)
+
+        # I-V curve specific features
+        features['num_points'] = len(self.voltages)
+        features['iv_curve_area'] = np.trapz(self.currents, self.voltages)
+        features['voltage_range'] = np.max(self.voltages) - np.min(self.voltages)
+        features['current_range'] = np.max(self.currents) - np.min(self.currents)
+
+        return features
+
+    def print(self, verbose: bool = False):
+        """
+        Print feature information in a human-readable format.
+
+        Args:
+            verbose: If True, show detailed feature values and names
+        """
+        print(f"Circuit Features Summary:")
+        print(f"  Comment: {self.comment}")
+        print(f"  Data Points: {len(self.voltages)} I-V measurements")
+        print(f"  Voltage Range: {np.min(self.voltages):.3f}V to {np.max(self.voltages):.3f}V")
+        print(f"  Current Range: {np.min(self.currents)*1000:.3f}mA to {np.max(self.currents)*1000:.3f}mA")
+
+        print(f"  Measurement Settings:")
+        print(f"    Sampling Rate: {self.measurement_settings.sampling_rate} Hz")
+        print(f"    Internal Resistance: {self.measurement_settings.internal_resistance} Ohm")
+        print(f"    Max Voltage: {self.measurement_settings.max_voltage} V")
+        print(f"    Probe Frequency: {self.measurement_settings.probe_signal_frequency} Hz")
+        print(f"    Precharge Delay: {self.measurement_settings.precharge_delay} s")
+
+        print(f"  Feature Vector: {len(self.feature_vector)} features extracted")
+
+        if verbose:
+            print(f"  Detailed Features:")
+            for name, value in self._features.items():
+                print(f"    {name}: {value:.6f}")
 
 
 class CircuitClassifier:
