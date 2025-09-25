@@ -8,6 +8,7 @@ It includes functions for feature extraction, model training, inference, and mod
 from typing import Dict, List, Union, Optional, Any
 from collections import OrderedDict
 import numpy as np
+import re
 from pathlib import Path
 from epcore.filemanager.ufiv import load_board_from_ufiv
 
@@ -35,6 +36,9 @@ class CircuitFeatures:
 
         self.voltages = voltages
         self.currents = currents
+
+        # Extract circuit class name from comment
+        self.class_name = self._extract_class_name(comment)
 
         # Extract features as an ordered dictionary (name -> value)
         self._features = self._extract_features()
@@ -107,6 +111,27 @@ class CircuitFeatures:
 
         return features
 
+    @staticmethod
+    def _extract_class_name(comment: str) -> str:
+        """
+        Extract circuit class name from comment string.
+
+        The class name is expected to be in the format "Class: [ClassName]"
+        where ClassName is extracted without the brackets.
+
+        Args:
+            comment: Circuit comment string
+
+        Returns:
+            Circuit class name without brackets, or empty string if not found
+        """
+        pattern = r'Class:\s*\[([^\]]+)\]'
+        match = re.search(pattern, comment)
+        if match:
+            return match.group(1)
+        else:
+            return ""
+
     def print(self, verbose: bool = False):
         """
         Print feature information in a human-readable format.
@@ -115,6 +140,7 @@ class CircuitFeatures:
             verbose: If True, show detailed feature values and names
         """
         print(f"Circuit Features Summary:")
+        print(f"  Circuit Class: {self.class_name}")
         print(f"  Comment: {self.comment}")
         print(f"  Data Points: {len(self.voltages)} I-V measurements")
 
