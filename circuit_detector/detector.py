@@ -32,6 +32,7 @@ class CircuitFeatures:
         """
         self.comment = comment
         self.measurement_settings = measurement_settings
+
         self.voltages = voltages
         self.currents = currents
 
@@ -61,25 +62,48 @@ class CircuitFeatures:
         """
         features = OrderedDict()
 
+        # Voltages and currents must be normalized because only their form matters for classification
+        norm_voltage = self.voltages / self.measurement_settings.max_voltage
+        max_current = self.measurement_settings.max_voltage / self.measurement_settings.internal_resistance
+        norm_current = self.currents / max_current
+
+        # Let's measure the loop square in I(t) V(t) curve. It will correspond to the circuit capacitance
+        features['iv_curve_area [V*A]'] = np.trapz(norm_current, norm_voltage)
+
+        # FFT features for first three frequencies (excluding DC component)
+        # When there is no second and third harmonic the circuit contains only L, C and R components
+        self.norm_voltage_fft = np.fft.fft(norm_voltage)
+        self.norm_current_fft = np.fft.fft(norm_current)
+
+        # Extract amplitude and phase for first three non-DC frequencies
+        for i in range(1, 4):  # Skip DC component (index 0), take frequencies 1, 2, 3
+            # Voltage FFT amplitude and phase
+            voltage_amplitude = np.abs(self.norm_voltage_fft[i])
+            voltage_phase = np.angle(self.norm_voltage_fft[i])
+            features[f'voltage_fft_freq{i}_amplitude'] = voltage_amplitude
+            features[f'voltage_fft_freq{i}_phase [rad]'] = voltage_phase
+
+            # Current FFT amplitude and phase
+            current_amplitude = np.abs(self.norm_current_fft[i])
+            current_phase = np.angle(self.norm_current_fft[i])
+            features[f'current_fft_freq{i}_amplitude'] = current_amplitude
+            features[f'current_fft_freq{i}_phase [rad]'] = current_phase
+
         # Statistical features from voltages
-        features['voltage_mean'] = np.mean(self.voltages)
-        features['voltage_std'] = np.std(self.voltages)
-        features['voltage_min'] = np.min(self.voltages)
-        features['voltage_max'] = np.max(self.voltages)
-        features['voltage_median'] = np.median(self.voltages)
+        features['voltage_mean [V]'] = np.mean(self.voltages)
+        features['voltage_std [V]'] = np.std(self.voltages)
+        features['voltage_min [V]'] = np.min(self.voltages)
+        features['voltage_max [V]'] = np.max(self.voltages)
+        features['voltage_median [v]'] = np.median(self.voltages)
+        features['voltage_range [V]'] = np.max(self.voltages) - np.min(self.voltages)
 
         # Statistical features from currents
-        features['current_mean'] = np.mean(self.currents)
-        features['current_std'] = np.std(self.currents)
-        features['current_min'] = np.min(self.currents)
-        features['current_max'] = np.max(self.currents)
-        features['current_median'] = np.median(self.currents)
-
-        # I-V curve specific features
-        features['num_points'] = len(self.voltages)
-        features['iv_curve_area'] = np.trapz(self.currents, self.voltages)
-        features['voltage_range'] = np.max(self.voltages) - np.min(self.voltages)
-        features['current_range'] = np.max(self.currents) - np.min(self.currents)
+        features['current_mean [A]'] = np.mean(self.currents)
+        features['current_std [A]'] = np.std(self.currents)
+        features['current_min [A]'] = np.min(self.currents)
+        features['current_max [A]'] = np.max(self.currents)
+        features['current_median [A]'] = np.median(self.currents)
+        features['current_range [A]'] = np.max(self.currents) - np.min(self.currents)
 
         return features
 
@@ -93,8 +117,6 @@ class CircuitFeatures:
         print(f"Circuit Features Summary:")
         print(f"  Comment: {self.comment}")
         print(f"  Data Points: {len(self.voltages)} I-V measurements")
-        print(f"  Voltage Range: {np.min(self.voltages):.3f}V to {np.max(self.voltages):.3f}V")
-        print(f"  Current Range: {np.min(self.currents)*1000:.3f}mA to {np.max(self.currents)*1000:.3f}mA")
 
         print(f"  Measurement Settings:")
         print(f"    Sampling Rate: {self.measurement_settings.sampling_rate} Hz")
