@@ -17,7 +17,8 @@ This is a Python 3.6.8 project for equivalent circuit recognition from I-V curve
   - `parameters_changer.py` - Component parameter variation handling
   - `simulator_ivc.py` - I-V curve simulation using PySpice
   - `validate_circuit_classes.py` - Circuit class validation
-- **`circuit_detector/`** - Detection/recognition module (currently minimal)
+- **`circuit_detector/`** - Detection/recognition module
+  - `detector.py` - Core logic for classificator
 - **`dataset/`** - Generated output folder for training data
 
 ### Key Dependencies
