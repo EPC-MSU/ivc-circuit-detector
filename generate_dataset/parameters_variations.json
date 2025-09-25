@@ -11,7 +11,7 @@
         "cir_unit": "K",
         "nominal" : {
           "type": "list",
-          "value": [0.1, 0.510, 1, 10]
+          "value": [0.1, 1, 10, 100]
         }
       }
     ],
@@ -22,8 +22,8 @@
         "cir_key": null,
         "cir_unit": "N",
         "nominal" : {
-          "type": "constant",
-          "value": 10
+          "type": "list",
+          "value": [10, 10000, 1000000]
         }
       }
     ],
