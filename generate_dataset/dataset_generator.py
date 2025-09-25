@@ -14,7 +14,7 @@ DEFAULT_DATASET_FOLDER = 'dataset'
 def generate_dataset(save_png=False, debug=False, dataset_dir=None):
     """
     Generate dataset from circuit classes.
-    
+
     Args:
         save_png: Whether to save PNG images for each dataset file
         debug: Debug mode flag
@@ -22,7 +22,7 @@ def generate_dataset(save_png=False, debug=False, dataset_dir=None):
     """
     if dataset_dir is None:
         dataset_dir = DEFAULT_DATASET_FOLDER
-    
+
     with open(PARAMETERS_SETTINGS_PATH, 'r') as f:
         parameters_settings = json.load(f)
 
@@ -47,18 +47,18 @@ def generate_dataset(save_png=False, debug=False, dataset_dir=None):
             simulator = SimulatorIVC(measurement_variant)
 
             for i, circuit in enumerate(changer.circuits):
-                print(output_path, i)
+                print(output_path, f"params{i:03d}")
                 analysis = simulator.get_ivc(circuit)
                 if measurement_variant['noise_settings']['without_noise']:
-                    uzf_name = os.path.join(output_path, f'{cls}_params{i}.uzf')
-                    png_name = os.path.join(output_path, f'{cls}_params{i}.png')
+                    uzf_name = os.path.join(output_path, f'{cls}_params{i:03d}_noise_no.uzf')
+                    png_name = os.path.join(output_path, f'{cls}_params{i:03d}_noise_no.png')
                     simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
                     simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
 
                 for noise_number in range(measurement_variant['noise_settings']['with_noise_copies']):
                     analysis = simulator.add_noise(analysis, measurement_variant['noise_settings'])
 
-                    uzf_name = os.path.join(output_path, f'{cls}_params{i}_noise{noise_number}.uzf')
-                    png_name = os.path.join(output_path, f'{cls}_params{i}_noise{noise_number}.png')
+                    uzf_name = os.path.join(output_path, f'{cls}_params{i:03d}_noise{noise_number+1:03d}.uzf')
+                    png_name = os.path.join(output_path, f'{cls}_params{i:03d}_noise{noise_number+1:03d}.png')
                     simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
                     simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
