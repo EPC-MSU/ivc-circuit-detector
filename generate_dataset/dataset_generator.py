@@ -11,13 +11,12 @@ MEASUREMENTS_SETTINGS_PATH = 'generate_dataset\\measurement_settings.json'
 DEFAULT_DATASET_FOLDER = 'dataset'
 
 
-def generate_dataset(save_png=False, debug=False, dataset_dir=None):
+def generate_dataset(save_png=False, dataset_dir=None):
     """
     Generate dataset from circuit classes.
 
     Args:
         save_png: Whether to save PNG images for each dataset file
-        debug: Debug mode flag
         dataset_dir: Output directory for dataset (default: 'dataset')
     """
     if dataset_dir is None:
@@ -41,7 +40,7 @@ def generate_dataset(save_png=False, debug=False, dataset_dir=None):
             output_path = os.path.join(dataset_dir, measurement_variant['name'])
 
             changer = ParametersChanger(cir_path, parameters_settings)
-            changer.generate_circuits(debug)
+            changer.generate_circuits()
             changer.dump_circuits_on_disk(output_path)
 
             simulator = SimulatorIVC(measurement_variant)
