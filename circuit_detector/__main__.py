@@ -67,12 +67,12 @@ def predict_command(args):
     logging.info(f"Predicting circuit class for: {uzf_path}")
     result = predict_circuit_class(uzf_path, classifier)
 
-    print(f"Prediction Results:")
+    print("Prediction Results:")
     print(f"  Circuit Class: {result['class_name']} (ID: {result['class_id']})")
     print(f"  Confidence: {result['confidence']:.3f}")
 
     if args.verbose:
-        print(f"  Class Probabilities:")
+        print("  Class Probabilities:")
         for i, prob in enumerate(result['probabilities']):
             class_name = classifier.classes_[i]
             print(f"    {class_name}: {prob:.3f}")
@@ -185,12 +185,12 @@ def evaluate_command(args):
     print("MODEL EVALUATION RESULTS")
     print("="*60)
 
-    print(f"\nDataset Summary:")
+    print("\nDataset Summary:")
     print(f"  Total files processed: {len(y_true)}")
     print(f"  Failed files: {len(failed_files)}")
     print(f"  Classes in model: {len(classifier.classes_)}")
 
-    print(f"\nOverall Performance:")
+    print("\nOverall Performance:")
     print(f"  Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
     print(f"  Macro avg Precision: {precision_macro:.4f}")
     print(f"  Macro avg Recall: {recall_macro:.4f}")
@@ -199,7 +199,7 @@ def evaluate_command(args):
     print(f"  Weighted avg Recall: {recall_weighted:.4f}")
     print(f"  Weighted avg F1-score: {f1_weighted:.4f}")
 
-    print(f"\nPer-Class Performance:")
+    print("\nPer-Class Performance:")
     print(f"{'Class':<15} {'Precision':<10} {'Recall':<10} {'F1-Score':<10} {'Support':<10}")
     print("-" * 60)
 
@@ -209,7 +209,7 @@ def evaluate_command(args):
         else:
             print(f"{class_name:<15} {'N/A':<10} {'N/A':<10} {'N/A':<10} {'0':<10}")
 
-    print(f"\nConfusion Matrix:")
+    print("\nConfusion Matrix:")
     print("Rows: True labels, Columns: Predicted labels")
 
     # Print class names as column headers
@@ -242,47 +242,47 @@ def extract_features_command(args):
     logging.info(f"Extracting features from: {uzf_path}")
     features = extract_features_from_uzf(uzf_path)
 
-    features.print(verbose=args.verbose)
+    features.print_features(verbose=args.verbose)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Circuit Detector CLI for training and inference")
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Train command
-    train_parser = subparsers.add_parser('train', help='Train a circuit classifier model')
-    train_parser.add_argument('--dataset-dir', default='dataset/',
-                              help='Path to dataset directory containing circuit classes (default: dataset/)')
-    train_parser.add_argument('--output', default='model/model.pkl',
-                              help='Output path for trained model file (default: model/model.pkl)')
-    train_parser.add_argument('--model-params',
-                              help='Model parameters as comma-separated key=value pairs')
+    train_parser = subparsers.add_parser("train", help="Train a circuit classifier model")
+    train_parser.add_argument("--dataset-dir", default="dataset/",
+                              help="Path to dataset directory containing circuit classes (default: dataset/)")
+    train_parser.add_argument("--output", default="model/model.pkl",
+                              help="Output path for trained model file (default: model/model.pkl)")
+    train_parser.add_argument("--model-params",
+                              help="Model parameters as comma-separated key=value pairs")
     train_parser.set_defaults(func=train_command)
 
     # Predict command
-    predict_parser = subparsers.add_parser('predict', help='Predict circuit class from UZF file')
-    predict_parser.add_argument('--model', default='model/model.pkl',
-                                help='Path to trained model file (default: model/model.pkl)')
-    predict_parser.add_argument('--uzf-file', required=True,
-                                help='Path to UZF file for prediction')
-    predict_parser.add_argument('-v', '--verbose', action='store_true',
-                                help='Show detailed prediction probabilities')
+    predict_parser = subparsers.add_parser("predict", help="Predict circuit class from UZF file")
+    predict_parser.add_argument("--model", default="model/model.pkl",
+                                help="Path to trained model file (default: model/model.pkl)")
+    predict_parser.add_argument("--uzf-file", required=True,
+                                help="Path to UZF file for prediction")
+    predict_parser.add_argument("-v", "--verbose", action="store_true",
+                                help="Show detailed prediction probabilities")
     predict_parser.set_defaults(func=predict_command)
 
     # Evaluate command
-    eval_parser = subparsers.add_parser('evaluate', help='Evaluate model performance')
-    eval_parser.add_argument('--model', default='model/model.pkl',
-                             help='Path to trained model file (default: model/model.pkl)')
-    eval_parser.add_argument('--test-dir', required=True,
-                             help='Path to test dataset directory')
+    eval_parser = subparsers.add_parser("evaluate", help="Evaluate model performance")
+    eval_parser.add_argument("--model", default="model/model.pkl",
+                             help="Path to trained model file (default: model/model.pkl)")
+    eval_parser.add_argument("--test-dir", required=True,
+                             help="Path to test dataset directory")
     eval_parser.set_defaults(func=evaluate_command)
 
     # Extract features command
-    features_parser = subparsers.add_parser('features', help='Extract and display features from UZF file')
-    features_parser.add_argument('--uzf-file', required=True,
-                                 help='Path to UZF file for feature extraction')
-    features_parser.add_argument('-v', '--verbose', action='store_true',
-                                 help='Show detailed feature values')
+    features_parser = subparsers.add_parser("features", help="Extract and display features from UZF file")
+    features_parser.add_argument("--uzf-file", required=True,
+                                 help="Path to UZF file for feature extraction")
+    features_parser.add_argument("-v", "--verbose", action="store_true",
+                                 help="Show detailed feature values")
     features_parser.set_defaults(func=extract_features_command)
 
     arguments = parser.parse_args()

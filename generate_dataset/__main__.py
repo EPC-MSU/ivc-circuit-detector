@@ -11,7 +11,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate dataset from `circuit_classes` to output folder")
     parser.add_argument('-i', "--image", action="store_true", help="Add IVC-png-image to each dataset file")
     parser.add_argument('--dataset-dir', default='dataset',
-                       help="Output directory for generated dataset (default: dataset)")
+                        help="Output directory for generated dataset (default: dataset)")
     args = parser.parse_args()
 
     validate_circuit_classes()

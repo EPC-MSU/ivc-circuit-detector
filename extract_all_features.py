@@ -6,7 +6,6 @@ This script runs "python -m circuit_detector features" for each UZF file found
 in the dataset_train directory and saves the output to corresponding text files.
 """
 
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -73,7 +72,7 @@ def extract_features_to_file(uzf_file, dataset_dir, output_dir, verbose=False):
         # Run the command and capture output
         print(f"Processing: {str(relative_path)} -> {str(output_relative_dir / output_filename)}")
 
-        with open(output_path, 'w', encoding='utf-8') as output_file:
+        with open(output_path, "w", encoding="utf-8") as output_file:
             result = subprocess.run(
                 cmd,
                 stdout=output_file,
@@ -96,13 +95,13 @@ def extract_features_to_file(uzf_file, dataset_dir, output_dir, verbose=False):
 def main():
     parser = argparse.ArgumentParser(description="Extract features from all UZF files in dataset")
     parser.add_argument("--dataset-dir", default="dataset_train",
-                       help="Path to dataset directory containing UZF files (default: dataset_train)")
+                        help="Path to dataset directory containing UZF files (default: dataset_train)")
     parser.add_argument("--output-dir", default="feature_reports",
-                       help="Directory to save feature report files (default: feature_reports)")
+                        help="Directory to save feature report files (default: feature_reports)")
     parser.add_argument("-v", "--verbose", action="store_true",
-                       help="Generate verbose feature reports")
+                        help="Generate verbose feature reports")
     parser.add_argument("--dry-run", action="store_true",
-                       help="Show what files would be processed without actually processing them")
+                        help="Show what files would be processed without actually processing them")
 
     args = parser.parse_args()
 
@@ -147,7 +146,7 @@ def main():
             failed += 1
 
     # Summary
-    print(f"\nFeature extraction complete:")
+    print("\nFeature extraction complete:")
     print(f"  Successfully processed: {successful}")
     print(f"  Failed: {failed}")
     print(f"  Output directory: {output_dir}")

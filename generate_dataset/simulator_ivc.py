@@ -37,7 +37,9 @@ class SimulatorIVC:
         voltages = np.append(voltages, voltages[0])  # Close points circle
         currents = np.append(currents, currents[0])  # Close points circle
 
-        expected_points = int(self.measurement_settings['sampling_rate'] / self.measurement_settings['probe_signal_frequency'])
+        expected_points = int(
+            self.measurement_settings['sampling_rate'] / self.measurement_settings['probe_signal_frequency']
+        )
         assert len(voltages) == expected_points, f"Expected {expected_points} voltage points, got {len(voltages)}"
         assert len(currents) == expected_points, f"Expected {expected_points} current points, got {len(currents)}"
         return voltages, currents

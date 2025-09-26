@@ -132,19 +132,19 @@ class CircuitFeatures:
         else:
             return ""
 
-    def print(self, verbose: bool = False):
+    def print_features(self, verbose: bool = False):
         """
         Print feature information in a human-readable format.
 
         Args:
             verbose: If True, show detailed feature values and names
         """
-        print(f"Circuit Features Summary:")
+        print("Circuit Features Summary:")
         print(f"  Circuit Class: {self.class_name}")
         print(f"  Comment: {self.comment}")
         print(f"  Data Points: {len(self.voltages)} I-V measurements")
 
-        print(f"  Measurement Settings:")
+        print("  Measurement Settings:")
         print(f"    Sampling Rate: {self.measurement_settings.sampling_rate} Hz")
         print(f"    Internal Resistance: {self.measurement_settings.internal_resistance} Ohm")
         print(f"    Max Voltage: {self.measurement_settings.max_voltage} V")
@@ -154,7 +154,7 @@ class CircuitFeatures:
         print(f"  Feature Vector: {len(self.feature_vector)} features extracted")
 
         if verbose:
-            print(f"  Detailed Features:")
+            print("  Detailed Features:")
             for name, value in self._features.items():
                 print(f"    {name}: {value:.6f}")
 

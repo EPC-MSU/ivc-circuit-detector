@@ -268,7 +268,7 @@ def train_classifier(dataset_dir: Union[str, Path],
         trained=True
     )
 
-    print(f"Training completed successfully!")
+    print("Training completed successfully!")
     print(f"Model trained on {len(x)} samples with {len(unique_classes)} classes")
 
     return classifier
