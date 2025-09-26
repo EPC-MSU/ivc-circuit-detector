@@ -31,9 +31,9 @@ class TestFeatureExtraction(unittest.TestCase):
         # Validate measurement settings extraction
         self.assertIsNotNone(features.measurement_settings)
         # Check for expected measurement parameters
-        self.assertTrue(hasattr(features.measurement_settings, 'sampling_rate'))
-        self.assertTrue(hasattr(features.measurement_settings, 'internal_resistance'))
-        self.assertTrue(hasattr(features.measurement_settings, 'max_voltage'))
+        self.assertTrue(hasattr(features.measurement_settings, "sampling_rate"))
+        self.assertTrue(hasattr(features.measurement_settings, "internal_resistance"))
+        self.assertTrue(hasattr(features.measurement_settings, "max_voltage"))
 
         # Validate voltages array
         self.assertIsInstance(features.voltages, np.ndarray)
@@ -55,5 +55,5 @@ class TestFeatureExtraction(unittest.TestCase):
             extract_features_from_uzf(non_existent_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

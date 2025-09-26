@@ -100,21 +100,21 @@ class CircuitClassifier:
 
         # Prepare data to save
         model_data = {
-            'model': self.model,
-            'classes': self._classes,
-            'class_to_index': self._class_to_index,
-            'trained': self._trained
+            "model": self.model,
+            "classes": self._classes,
+            "class_to_index": self._class_to_index,
+            "trained": self._trained
         }
 
         try:
-            with open(model_path, 'wb') as f:
+            with open(model_path, "wb") as f:
                 pickle.dump(model_data, f)
             print(f"Model saved successfully to {model_path}")
         except Exception as e:
             raise IOError(f"Failed to save model to {model_path}: {str(e)}")
 
     @classmethod
-    def load(cls, model_path: Union[str, Path]) -> 'CircuitClassifier':
+    def load(cls, model_path: Union[str, Path]) -> "CircuitClassifier":
         """
         Load trained classifier model from file.
 
@@ -133,21 +133,21 @@ class CircuitClassifier:
             raise FileNotFoundError(f"Model file not found: {model_path}")
 
         try:
-            with open(model_path, 'rb') as f:
+            with open(model_path, "rb") as f:
                 model_data = pickle.load(f)
 
             # Validate model data structure
-            required_keys = ['model', 'classes', 'class_to_index', 'trained']
+            required_keys = ["model", "classes", "class_to_index", "trained"]
             for key in required_keys:
                 if key not in model_data:
                     raise ValueError(f"Invalid model file: missing '{key}' data")
 
             # Create and configure classifier
             classifier = cls(
-                model=model_data['model'],
-                classes=model_data['classes'],
-                class_to_index=model_data['class_to_index'],
-                trained=model_data['trained']
+                model=model_data["model"],
+                classes=model_data["classes"],
+                class_to_index=model_data["class_to_index"],
+                trained=model_data["trained"]
             )
 
             print(f"Model loaded successfully from {model_path}")
@@ -248,11 +248,11 @@ def train_classifier(dataset_dir: Union[str, Path],
     # Step 4: Train Random Forest model
     if model_params is None:
         model_params = {
-            'n_estimators': 100,
-            'random_state': 42,
-            'max_depth': 10,
-            'min_samples_split': 5,
-            'min_samples_leaf': 2
+            "n_estimators": 100,
+            "random_state": 42,
+            "max_depth": 10,
+            "min_samples_split": 5,
+            "min_samples_leaf": 2
         }
 
     print(f"Training Random Forest with parameters: {model_params}")
@@ -288,10 +288,10 @@ def predict_circuit_class(uzf_path: Union[str, Path],
 
     Returns:
         Dictionary containing:
-            - 'class_id': Predicted class number
-            - 'class_name': Predicted class name
-            - 'confidence': Prediction confidence score
-            - 'probabilities': Full probability distribution
+            - "class_id": Predicted class number
+            - "class_name": Predicted class name
+            - "confidence": Prediction confidence score
+            - "probabilities": Full probability distribution
 
     Raises:
         FileNotFoundError: If UZF file doesn't exist
@@ -312,12 +312,12 @@ def predict_circuit_class(uzf_path: Union[str, Path],
 
     # Step 5: Create comprehensive result dictionary
     result = {
-        'class_id': int(class_id),
-        'class_name': class_name,
-        'confidence': confidence,
-        'probabilities': probabilities.tolist(),
-        'feature_count': len(features.feature_vector),
-        'uzf_path': str(uzf_path)
+        "class_id": int(class_id),
+        "class_name": class_name,
+        "confidence": confidence,
+        "probabilities": probabilities.tolist(),
+        "feature_count": len(features.feature_vector),
+        "uzf_path": str(uzf_path)
     }
 
     return result
