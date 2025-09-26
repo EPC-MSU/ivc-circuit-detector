@@ -19,7 +19,9 @@ This is a Python 3.6.8 project for equivalent circuit recognition from I-V curve
   - `validate_circuit_classes.py` - Circuit class validation
 - **`circuit_detector/`** - Detection/recognition module
   - `detector.py` - Core logic for classificator
-- **`dataset/`** - Generated output folder for training data
+- **`dataset_train/`** - Generated output folder for training data
+- **`dataset_validate/`** - Generated output folder for validation data
+- **`model/`** - Folder for trained models
 
 ### Key Dependencies
 
@@ -27,15 +29,24 @@ This is a Python 3.6.8 project for equivalent circuit recognition from I-V curve
 - **matplotlib** - Plotting and visualization
 - **numpy** - Numerical computations
 - **EPCore** - Custom library (git+https://github.com/EPC-MSU/EPCore)
+- **sklearn** - ML library for classification
 
 ## Development Commands
 
 ### Environment Setup
+
 ```bash
 # Create virtual environment (Python 3.6.8 required)
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
+```
+
+### Mandatory rules
+
+For running any python code (dataset generation, testing, etc) you must always activate virtual environment first
+```bash
+venv\Scripts\activate
 ```
 
 ### Dataset Generation
