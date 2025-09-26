@@ -32,11 +32,11 @@ def train_command(args):
     model_params = {}
     if args.model_params:
         # Parse model parameters from command line (format: key=value,key=value)
-        for param in args.model_params.split(','):
-            key, value = param.split('=')
+        for param in args.model_params.split(","):
+            key, value = param.split("=")
             try:
                 # Try to convert to number if possible
-                model_params[key] = float(value) if '.' in value else int(value)
+                model_params[key] = float(value) if "." in value else int(value)
             except ValueError:
                 model_params[key] = value
 
@@ -73,7 +73,7 @@ def predict_command(args):
 
     if args.verbose:
         print("  Class Probabilities:")
-        for i, prob in enumerate(result['probabilities']):
+        for i, prob in enumerate(result["probabilities"]):
             class_name = classifier.classes_[i]
             print(f"    {class_name}: {prob:.3f}")
 
@@ -123,7 +123,7 @@ def evaluate_command(args):
 
             # Make prediction
             result = predict_circuit_class(uzf_file, classifier)
-            pred_class = result['class_name']
+            pred_class = result["class_name"]
 
             # Store results
             y_true.append(true_class)
@@ -171,10 +171,10 @@ def evaluate_command(args):
 
     # Macro and weighted averages
     precision_macro, recall_macro, f1_macro, _ = precision_recall_fscore_support(
-        y_true_indices, y_pred_indices, average='macro'
+        y_true_indices, y_pred_indices, average="macro"
     )
     precision_weighted, recall_weighted, f1_weighted, _ = precision_recall_fscore_support(
-        y_true_indices, y_pred_indices, average='weighted'
+        y_true_indices, y_pred_indices, average="weighted"
     )
 
     # Confusion matrix
