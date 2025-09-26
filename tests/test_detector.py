@@ -5,7 +5,7 @@ Tests for circuit detector functionality.
 import unittest
 import numpy as np
 from pathlib import Path
-from circuit_detector.detector import extract_features_from_uzf, CircuitFeatures
+from circuit_detector.features import extract_features_from_uzf, CircuitFeatures
 
 
 class TestFeatureExtraction(unittest.TestCase):

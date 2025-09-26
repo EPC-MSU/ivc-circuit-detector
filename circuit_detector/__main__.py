@@ -3,10 +3,10 @@ import logging
 import sys
 from pathlib import Path
 
-from circuit_detector.detector import (
+from circuit_detector.features import extract_features_from_uzf
+from circuit_detector.classifier import (
     train_classifier,
     predict_circuit_class,
-    extract_features_from_uzf,
     CircuitClassifier
 )
 
@@ -158,14 +158,14 @@ if __name__ == "__main__":
                                  help='Show detailed feature values')
     features_parser.set_defaults(func=extract_features_command)
 
-    args = parser.parse_args()
+    arguments = parser.parse_args()
 
-    if not args.command:
+    if not arguments.command:
         parser.print_help()
         sys.exit(1)
 
     try:
-        args.func(args)
+        arguments.func(arguments)
     except Exception as e:
         logging.error(f"Command failed: {e}")
         if logging.getLogger().level == logging.DEBUG:
