@@ -29,7 +29,7 @@ This is a Python 3.6.8 project for equivalent circuit recognition from I-V curve
 - **matplotlib** - Plotting and visualization
 - **numpy** - Numerical computations
 - **EPCore** - Custom library (git+https://github.com/EPC-MSU/EPCore)
-- **sklearn** - ML library for classification
+- **scikit-learn** - ML library for classification
 
 ## Development Commands
 

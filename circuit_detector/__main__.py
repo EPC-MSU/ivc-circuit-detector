@@ -129,7 +129,7 @@ def evaluate_command(args):
             y_true.append(true_class)
             y_pred.append(pred_class)
 
-            # Convert to indices for sklearn metrics
+            # Convert to indices for scikit-learn metrics
             if true_class in classifier._class_to_index:
                 y_true_indices.append(classifier._class_to_index[true_class])
             else:
