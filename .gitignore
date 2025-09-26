@@ -4,7 +4,10 @@ __pycache__/
 *$py.class
 .idea
 .vscode
+.claude
 dataset*/
+feature_reports/*
+model/*
 cutter.py
 dataset_real_vs_simulation.zip
 

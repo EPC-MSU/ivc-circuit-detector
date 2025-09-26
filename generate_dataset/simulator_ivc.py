@@ -16,12 +16,6 @@ class SimulatorIVC:
         # ssr = simulator sampling rate
         ssr = self.measurement_settings['sampling_rate']
 
-        # TODO: Dirty quality increase, but set-up EPLab for new settings is worse
-        if ssr == 2000000:
-            ssr = 10000000
-
-        ssr *= 2  # Increase quality
-
         circuit.R('cs', 'input', 'input_dummy', self.measurement_settings['internal_resistance'])
         # circuit.C('coaxial_probes', circuit.gnd, 'input_dummy', 204*10**-12)  # 28*10**-12
         circuit.AcLine('Current', circuit.gnd, 'input_dummy', rms_voltage=rms_voltage,
@@ -43,8 +37,9 @@ class SimulatorIVC:
         voltages = np.append(voltages, voltages[0])  # Close points circle
         currents = np.append(currents, currents[0])  # Close points circle
 
-        assert len(voltages) == 200
-        assert len(currents) == 200
+        expected_points = int(self.measurement_settings['sampling_rate'] / self.measurement_settings['probe_signal_frequency'])
+        assert len(voltages) == expected_points, f"Expected {expected_points} voltage points, got {len(voltages)}"
+        assert len(currents) == expected_points, f"Expected {expected_points} current points, got {len(currents)}"
         return voltages, currents
 
     def save_ivc(self, title, analysis, path):
