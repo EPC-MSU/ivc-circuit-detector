@@ -13,6 +13,12 @@ import subprocess
 from pathlib import Path
 import threading
 import traceback
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+import numpy as np
+from epcore.filemanager.ufiv import load_board_from_ufiv
+import glob
 
 # Import circuit_detector module API
 train_classifier = None
@@ -58,6 +64,13 @@ class DatasetGUI:
 
         # Try to import circuit_detector module
         self.circuit_detector_available = import_circuit_detector()
+
+        # Filtering state variables
+        self.current_classifier = None
+        self.uzf_files = []
+        self.current_file_index = 0
+        self.filter_canvas = None
+        self.filter_figure = None
 
         # Create notebook for tabs
         self.notebook = ttk.Notebook(root)
@@ -267,13 +280,111 @@ class DatasetGUI:
         train_scrollbar.pack(side="right", fill="y")
 
     def create_filter_tab(self):
-        """Create the dataset filtering tab (empty for now)"""
+        """Create the dataset filtering tab"""
         self.filter_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.filter_frame, text="Dataset Filtering")
 
-        placeholder_label = ttk.Label(self.filter_frame,
-                                      text="Dataset filtering functionality will be implemented here")
-        placeholder_label.pack(expand=True)
+        # Create main container with scrollable content
+        main_container = ttk.Frame(self.filter_frame)
+        main_container.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # SETTINGS SECTION (combines Model File, Dataset Folder, and Filter Settings)
+        settings_frame = ttk.LabelFrame(main_container, text="Settings")
+        settings_frame.pack(fill="x", padx=5, pady=5)
+
+        # Model File
+        model_entry_frame = ttk.Frame(settings_frame)
+        model_entry_frame.pack(fill="x", padx=5, pady=5)
+
+        ttk.Label(model_entry_frame, text="Model File:").pack(side="left")
+        self.filter_model_var = tk.StringVar(value="model/model.pkl")
+        self.filter_model_entry = ttk.Entry(model_entry_frame, textvariable=self.filter_model_var, width=40)
+        self.filter_model_entry.pack(side="left", padx=(10, 5), fill="x", expand=True)
+
+        ttk.Button(model_entry_frame, text="Browse", command=self.browse_filter_model_file).pack(side="left")
+
+        # Dataset Folder
+        dataset_entry_frame = ttk.Frame(settings_frame)
+        dataset_entry_frame.pack(fill="x", padx=5, pady=5)
+
+        ttk.Label(dataset_entry_frame, text="Dataset Folder:").pack(side="left")
+        self.filter_dataset_var = tk.StringVar(value="dataset_train")
+        self.filter_dataset_entry = ttk.Entry(dataset_entry_frame, textvariable=self.filter_dataset_var, width=40)
+        self.filter_dataset_entry.pack(side="left", padx=(10, 5), fill="x", expand=True)
+
+        ttk.Button(dataset_entry_frame, text="Browse", command=self.browse_filter_dataset_folder).pack(side="left")
+
+        # Class filtering settings
+        class_filter_frame = ttk.Frame(settings_frame)
+        class_filter_frame.pack(fill="x", padx=5, pady=5)
+        self.class_mismatch_var = tk.BooleanVar(value=True)
+        self.class_mismatch_checkbox = ttk.Checkbutton(
+            class_filter_frame,
+            text="Class mismatch",
+            variable=self.class_mismatch_var,
+            command=self.on_class_mismatch_changed
+        )
+        self.class_mismatch_checkbox.pack(side="left", padx=5, pady=5)
+
+        ttk.Label(class_filter_frame, text="Minimal confidence level (%):").pack(side="left")
+        self.confidence_var = tk.DoubleVar(value=80.0)
+        self.confidence_scale = ttk.Scale(
+            class_filter_frame,
+            from_=0.0,
+            to=100.0,
+            orient="horizontal",
+            state="disabled",
+            variable=self.confidence_var,
+            length=200
+        )
+        self.confidence_scale.pack(side="left", padx=(10, 5))
+
+        self.confidence_label = ttk.Label(class_filter_frame, text="80.0%")
+        self.confidence_label.pack(side="left", padx=5)
+
+        # Update label when slider changes
+        self.confidence_var.trace("w", self.update_confidence_label)
+
+        # START FILTERING BUTTON
+        start_button_frame = ttk.Frame(main_container)
+        start_button_frame.pack(fill="x", padx=5, pady=10)
+
+        ttk.Button(start_button_frame, text="Start Filtering", command=self.start_filtering).pack(anchor="center")
+
+        # Info frame for actual and predicted class
+        info_frame = ttk.Frame(main_container)
+        info_frame.pack(fill="x", padx=5, pady=5)
+
+        self.actual_class_label = ttk.Label(info_frame, text="Actual Class: N/A", font=("Arial", 12))
+        self.actual_class_label.pack(side="left", padx=(0, 20))
+
+        self.predicted_class_label = ttk.Label(info_frame, text="Predicted Class: N/A", font=("Arial", 12))
+        self.predicted_class_label.pack(side="left")
+
+        # CONTROL BUTTONS (always visible below Circuit Analysis section)
+        control_frame = ttk.Frame(main_container)
+        control_frame.pack(fill="x", padx=5, pady=10)
+
+        self.delete_button = ttk.Button(control_frame, text="Delete", command=self.delete_current_file)
+        self.delete_button.pack(side="left", padx=(0, 10))
+        self.next_button = ttk.Button(control_frame, text="Next", command=self.next_file)
+        self.next_button.pack(side="left")
+
+        # Progress info
+        self.progress_label = ttk.Label(control_frame, text="Progress: N/A")
+        self.progress_label.pack(side="right")
+
+        # GRAPHICAL REPRESENTATION SECTION
+        graph_frame = ttk.LabelFrame(main_container, text="Circuit Analysis")
+        graph_frame.pack(fill="x", expand=True, padx=5, pady=5)
+
+        # Create matplotlib figure and canvas
+        self.filter_figure = Figure(figsize=(10, 6), dpi=80)
+        self.filter_canvas = FigureCanvasTkAgg(self.filter_figure, master=graph_frame)
+        self.filter_canvas.get_tk_widget().pack(fill="x", expand=True, padx=5, pady=5)
+        
+        # Clear the initial plot (after all widgets are created)
+        self.clear_plot()
 
     def load_parameters(self):
         """Load parameters from parameters_variations.json"""
@@ -707,6 +818,234 @@ class DatasetGUI:
         # Start validation in background thread
         thread = threading.Thread(target=validation_thread, daemon=True)
         thread.start()
+
+    def browse_filter_model_file(self):
+        """Browse for filter model file path (existing file)"""
+        file_path = filedialog.askopenfilename(
+            initialdir=self.project_root,
+            title="Select Model File for Filtering",
+            defaultextension=".pkl",
+            filetypes=[("Pickle files", "*.pkl"), ("All files", "*.*")]
+        )
+        if file_path:
+            try:
+                rel_path = Path(file_path).relative_to(self.project_root)
+                self.filter_model_var.set(str(rel_path))
+            except ValueError:
+                self.filter_model_var.set(file_path)
+
+    def browse_filter_dataset_folder(self):
+        """Browse for filter dataset directory"""
+        directory = filedialog.askdirectory(initialdir=self.project_root, title="Select Dataset Directory for Filtering")
+        if directory:
+            try:
+                rel_path = Path(directory).relative_to(self.project_root)
+                self.filter_dataset_var.set(str(rel_path))
+            except ValueError:
+                self.filter_dataset_var.set(directory)
+
+    def on_class_mismatch_changed(self):
+        """Handle class mismatch checkbox state change"""
+        if self.class_mismatch_var.get():
+            self.confidence_scale.state(["disabled"])
+        else:
+            self.confidence_scale.state(["!disabled"])
+
+    def update_confidence_label(self, *args):
+        """Update confidence level label when slider changes"""
+        self.confidence_label.config(text=f"{self.confidence_var.get():.1f}%")
+
+    def start_filtering(self):
+        """Initialize filtering process"""
+        if not self.circuit_detector_available or CircuitClassifier is None:
+            if not import_circuit_detector():
+                messagebox.showerror("Error",
+                                   "Circuit detector module not available.\n\n"
+                                   "Please ensure you are running from the project root directory\n"
+                                   "and that the circuit_detector module is properly installed.")
+                return
+
+        model_file = self.filter_model_var.get().strip()
+        dataset_folder = self.filter_dataset_var.get().strip()
+
+        if not model_file:
+            messagebox.showerror("Error", "Please specify model file path")
+            return
+
+        if not dataset_folder:
+            messagebox.showerror("Error", "Please specify dataset folder path")
+            return
+
+        # Load the classifier
+        try:
+            model_path = Path(model_file)
+            if not model_path.is_absolute():
+                model_path = self.project_root / model_path
+
+            self.current_classifier = CircuitClassifier.load(model_path)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load model: {e}")
+            return
+
+        # Find all UZF files in the dataset
+        dataset_path = Path(dataset_folder)
+        if not dataset_path.is_absolute():
+            dataset_path = self.project_root / dataset_path
+
+        if not dataset_path.exists():
+            messagebox.showerror("Error", f"Dataset folder does not exist: {dataset_path}")
+            return
+
+        # Find UZF files recursively
+        self.uzf_files = list(dataset_path.rglob("*.uzf"))
+
+        if not self.uzf_files:
+            messagebox.showwarning("Warning", f"No UZF files found in {dataset_path}")
+            return
+
+        self.current_file_index = 0
+        self.process_next_file()
+
+    def process_next_file(self):
+        """Process the next file in the list"""
+        while self.current_file_index < len(self.uzf_files):
+            current_file = self.uzf_files[self.current_file_index]
+
+            try:
+                # Load UZF file
+                measurement = load_board_from_ufiv(str(current_file))
+                comment = measurement.elements[0].pins[0].comment
+                measurement_obj = measurement.elements[0].pins[0].measurements[0]
+                iv_curve = measurement_obj.ivc
+
+                voltages = np.array(iv_curve.voltages)
+                currents = np.array(iv_curve.currents)
+
+                # Predict using the classifier
+                from circuit_detector.features import CircuitFeatures
+                features = CircuitFeatures(comment, measurement_obj.settings, voltages, currents)
+
+                # Extract actual class from CircuitFeatures class_name
+                actual_class = features.class_name if features.class_name else "Unknown"
+
+                # Get prediction probabilities
+                probabilities = self.current_classifier.predict_proba(features)
+                predicted_class_idx = np.argmax(probabilities)
+                predicted_class = self.current_classifier.classes_[predicted_class_idx]
+                confidence = probabilities[predicted_class_idx] * 100
+
+                # Check if file should be skipped based on filter criteria
+                should_skip = False
+
+                if self.class_mismatch_var.get():
+                    # Class mismatch mode: skip correctly recognized classes
+                    if actual_class == predicted_class:
+                        should_skip = True
+                else:
+                    # Confidence threshold mode: skip classes above threshold
+                    if confidence >= self.confidence_var.get():
+                        should_skip = True
+
+                if should_skip:
+                    self.current_file_index += 1
+                    continue
+
+                # Display this file
+                self.display_current_file(current_file, voltages, currents, actual_class, predicted_class, confidence, measurement_obj.settings)
+                return
+
+            except Exception as e:
+                print(f"Error processing {current_file}: {e}")
+                self.current_file_index += 1
+                continue
+
+        # All files processed
+        messagebox.showinfo("Complete", "All files have been processed!")
+        self.clear_plot()
+
+
+    def display_current_file(self, current_file, voltages, currents, actual_class, predicted_class, confidence, measurement_settings):
+        """Display the current file's I-V curve and information"""
+        # Clear previous plot
+        self.filter_figure.clear()
+
+        # Create subplot
+        ax = self.filter_figure.add_subplot(111)
+        ax.grid(True)
+        ax.plot(voltages, currents, 'b-', linewidth=2)
+        ax.set_xlabel("Voltage [V]")
+        ax.set_ylabel("Current [A]")
+        ax.set_title("IV-Characteristic")
+
+        # Set fixed axis ranges based on measurement parameters (same as save_plot function)
+        max_voltage = measurement_settings.max_voltage
+        internal_resistance = measurement_settings.internal_resistance
+
+        # X-axis: 20% wider than [-max_voltage, max_voltage]
+        x_range = max_voltage * 1.2
+        ax.set_xlim(-x_range, x_range)
+
+        # Y-axis: max_voltage / internal_resistance * 1.2, centered at 0
+        y_max = (max_voltage / internal_resistance) * 1.2
+        ax.set_ylim(-y_max, y_max)
+
+        # Update canvas
+        self.filter_canvas.draw()
+
+        # Update info labels
+        self.actual_class_label.config(text=f"Actual Class: {actual_class}")
+        self.predicted_class_label.config(text=f"Predicted Class: {predicted_class} ({confidence:.1f}%)")
+
+        # Update progress
+        self.progress_label.config(text=f"Progress: {self.current_file_index + 1}/{len(self.uzf_files)}")
+
+    def clear_plot(self):
+        """Clear the plot and info labels"""
+        if self.filter_figure:
+            self.filter_figure.clear()
+            ax = self.filter_figure.add_subplot(111)
+            ax.text(0.5, 0.5, "No data to display", ha="center", va="center", transform=ax.transAxes)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            self.filter_canvas.draw()
+
+        self.actual_class_label.config(text="Actual Class: N/A")
+        self.predicted_class_label.config(text="Predicted Class: N/A")
+        self.progress_label.config(text="Progress: N/A")
+
+    def delete_current_file(self):
+        """Delete current UZF file and corresponding PNG file if it exists"""
+        if self.current_file_index >= len(self.uzf_files):
+            return
+
+        current_file = self.uzf_files[self.current_file_index]
+
+        try:
+            # Delete UZF file
+            current_file.unlink()
+
+            # Try to delete corresponding PNG file
+            png_file = current_file.with_suffix(".png")
+            if png_file.exists():
+                png_file.unlink()
+
+            print(f"Deleted: {current_file}")
+            if png_file.exists():
+                print(f"Deleted: {png_file}")
+
+            # Remove from list and process next
+            self.uzf_files.pop(self.current_file_index)
+
+            # Don't increment index since we removed an item
+            self.process_next_file()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to delete file: {e}")
+
+    def next_file(self):
+        """Skip to next file without deleting"""
+        self.current_file_index += 1
+        self.process_next_file()
 
     def log_train_results(self, message):
         """Add message to training results log"""
