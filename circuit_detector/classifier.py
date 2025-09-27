@@ -9,6 +9,7 @@ from typing import Dict, List, Union, Optional, Any
 import numpy as np
 from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
 import pickle
 
 from .features import CircuitFeatures, extract_features_from_uzf
@@ -157,6 +158,146 @@ class CircuitClassifier:
 
         except Exception as e:
             raise ValueError(f"Failed to load model from {model_path}: {str(e)}")
+
+    def evaluate(self, test_dir: Union[str, Path]) -> Dict[str, Any]:
+        """
+        Evaluate model performance on test dataset.
+
+        Args:
+            test_dir: Path to test dataset directory with UZF files
+
+        Returns:
+            Dictionary containing evaluation metrics:
+                - "accuracy": Overall accuracy
+                - "precision_macro": Macro-averaged precision
+                - "recall_macro": Macro-averaged recall
+                - "f1_macro": Macro-averaged F1-score
+                - "precision_weighted": Weighted-averaged precision
+                - "recall_weighted": Weighted-averaged recall
+                - "f1_weighted": Weighted-averaged F1-score
+                - "per_class_metrics": Per-class precision, recall, F1, support
+                - "confusion_matrix": Confusion matrix
+                - "processed_files": Number of successfully processed files
+                - "failed_files": Number of failed files
+                - "class_names": List of class names
+
+        Raises:
+            ValueError: If classifier is not trained or no valid predictions made
+            FileNotFoundError: If test directory doesn't exist
+        """
+        if not self._trained:
+            raise ValueError("Classifier must be trained before evaluation")
+
+        test_path = Path(test_dir)
+        if not test_path.exists():
+            raise FileNotFoundError(f"Test directory not found: {test_dir}")
+
+        print(f"Scanning test dataset directory: {test_path}")
+
+        # Step 1: Find all UZF files in test dataset
+        uzf_files = list(test_path.rglob("*.uzf"))
+        if not uzf_files:
+            raise ValueError(f"No UZF files found in test directory: {test_dir}")
+
+        print(f"Found {len(uzf_files)} test files")
+
+        # Step 2: Make predictions and collect results
+        y_true = []  # True class names
+        y_pred = []  # Predicted class names
+        y_true_indices = []  # True class indices
+        y_pred_indices = []  # Predicted class indices
+        failed_files = []
+
+        for i, uzf_file in enumerate(uzf_files):
+            try:
+                # Extract features and get true class
+                features = extract_features_from_uzf(uzf_file)
+                true_class = features.class_name
+
+                if not true_class:
+                    print(f"Warning: Skipping file with no class label: {uzf_file}")
+                    continue
+
+                # Make prediction
+                result = predict_circuit_class(uzf_file, self)
+                pred_class = result["class_name"]
+
+                # Store results
+                y_true.append(true_class)
+                y_pred.append(pred_class)
+
+                # Convert to indices for sklearn metrics
+                if true_class in self._class_to_index:
+                    y_true_indices.append(self._class_to_index[true_class])
+                else:
+                    print(f"Warning: True class '{true_class}' not in training classes, skipping file: {uzf_file}")
+                    y_true.pop()  # Remove the last added true class
+                    y_pred.pop()  # Remove the last added pred class
+                    continue
+
+                y_pred_indices.append(self._class_to_index[pred_class])
+
+                # Progress reporting
+                if (i + 1) % 50 == 0:
+                    print(f"Processed {i + 1}/{len(uzf_files)} files...")
+
+            except Exception as e:
+                print(f"Warning: Failed to process {uzf_file}: {e}")
+                failed_files.append(uzf_file)
+                continue
+
+        if not y_true:
+            raise ValueError("No valid predictions were made")
+
+        print(f"Successfully processed {len(y_true)} files")
+        if failed_files:
+            print(f"Failed to process {len(failed_files)} files")
+
+        # Step 3: Calculate metrics
+        y_true_indices = np.array(y_true_indices)
+        y_pred_indices = np.array(y_pred_indices)
+
+        # Overall accuracy
+        accuracy = accuracy_score(y_true_indices, y_pred_indices)
+
+        # Per-class metrics
+        precision, recall, f1, support = precision_recall_fscore_support(
+            y_true_indices, y_pred_indices, average=None, labels=range(len(self.classes_))
+        )
+
+        # Macro and weighted averages
+        precision_macro, recall_macro, f1_macro, _ = precision_recall_fscore_support(
+            y_true_indices, y_pred_indices, average="macro"
+        )
+        precision_weighted, recall_weighted, f1_weighted, _ = precision_recall_fscore_support(
+            y_true_indices, y_pred_indices, average="weighted"
+        )
+
+        # Confusion matrix
+        cm = confusion_matrix(y_true_indices, y_pred_indices, labels=range(len(self.classes_)))
+
+        # Step 4: Create results dictionary
+        results = {
+            "accuracy": float(accuracy),
+            "precision_macro": float(precision_macro),
+            "recall_macro": float(recall_macro),
+            "f1_macro": float(f1_macro),
+            "precision_weighted": float(precision_weighted),
+            "recall_weighted": float(recall_weighted),
+            "f1_weighted": float(f1_weighted),
+            "per_class_metrics": {
+                "precision": precision.tolist(),
+                "recall": recall.tolist(),
+                "f1": f1.tolist(),
+                "support": support.tolist()
+            },
+            "confusion_matrix": cm.tolist(),
+            "processed_files": len(y_true),
+            "failed_files": len(failed_files),
+            "class_names": self.classes_.copy()
+        }
+
+        return results
 
 
 def train_classifier(dataset_dir: Union[str, Path],

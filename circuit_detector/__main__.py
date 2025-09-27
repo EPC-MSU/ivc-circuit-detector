@@ -2,8 +2,6 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-import numpy as np
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
 
 from circuit_detector.features import extract_features_from_uzf
 from circuit_detector.classifier import (
@@ -96,114 +94,48 @@ def evaluate_command(args):
 
     logging.info(f"Evaluating model on test dataset: {test_dir}")
 
-    # Step 1: Find all UZF files in test dataset
-    uzf_files = list(test_dir.rglob("*.uzf"))
-    if not uzf_files:
-        logging.error(f"No UZF files found in test directory: {test_dir}")
+    try:
+        # Use the classifier's evaluate method
+        results = classifier.evaluate(test_dir)
+
+        # Display formatted results
+        _display_evaluation_results(results)
+
+    except Exception as e:
+        logging.error(f"Evaluation failed: {e}")
         sys.exit(1)
 
-    logging.info(f"Found {len(uzf_files)} test files")
 
-    # Step 2: Make predictions and collect results
-    y_true = []  # True class names
-    y_pred = []  # Predicted class names
-    y_true_indices = []  # True class indices
-    y_pred_indices = []  # Predicted class indices
-    failed_files = []
-
-    for i, uzf_file in enumerate(uzf_files):
-        try:
-            # Extract features and get true class
-            features = extract_features_from_uzf(uzf_file)
-            true_class = features.class_name
-
-            if not true_class:
-                logging.warning(f"Skipping file with no class label: {uzf_file}")
-                continue
-
-            # Make prediction
-            result = predict_circuit_class(uzf_file, classifier)
-            pred_class = result["class_name"]
-
-            # Store results
-            y_true.append(true_class)
-            y_pred.append(pred_class)
-
-            # Convert to indices for scikit-learn metrics
-            if true_class in classifier._class_to_index:
-                y_true_indices.append(classifier._class_to_index[true_class])
-            else:
-                logging.warning(f"True class '{true_class}' not in training classes, skipping file: {uzf_file}")
-                y_true.pop()  # Remove the last added true class
-                y_pred.pop()  # Remove the last added pred class
-                continue
-
-            y_pred_indices.append(classifier._class_to_index[pred_class])
-
-            # Progress reporting
-            if (i + 1) % 50 == 0:
-                logging.info(f"Processed {i + 1}/{len(uzf_files)} files...")
-
-        except Exception as e:
-            logging.warning(f"Failed to process {uzf_file}: {e}")
-            failed_files.append(uzf_file)
-            continue
-
-    if not y_true:
-        logging.error("No valid predictions were made")
-        sys.exit(1)
-
-    logging.info(f"Successfully processed {len(y_true)} files")
-    if failed_files:
-        logging.info(f"Failed to process {len(failed_files)} files")
-
-    # Step 3: Calculate metrics
-    y_true_indices = np.array(y_true_indices)
-    y_pred_indices = np.array(y_pred_indices)
-
-    # Overall accuracy
-    accuracy = accuracy_score(y_true_indices, y_pred_indices)
-
-    # Per-class metrics
-    precision, recall, f1, support = precision_recall_fscore_support(
-        y_true_indices, y_pred_indices, average=None, labels=range(len(classifier.classes_))
-    )
-
-    # Macro and weighted averages
-    precision_macro, recall_macro, f1_macro, _ = precision_recall_fscore_support(
-        y_true_indices, y_pred_indices, average="macro"
-    )
-    precision_weighted, recall_weighted, f1_weighted, _ = precision_recall_fscore_support(
-        y_true_indices, y_pred_indices, average="weighted"
-    )
-
-    # Confusion matrix
-    cm = confusion_matrix(y_true_indices, y_pred_indices, labels=range(len(classifier.classes_)))
-
-    # Step 4: Display results
+def _display_evaluation_results(results: dict):
+    """Display evaluation results in a formatted manner."""
     print("\n" + "="*60)
     print("MODEL EVALUATION RESULTS")
     print("="*60)
 
     print("\nDataset Summary:")
-    print(f"  Total files processed: {len(y_true)}")
-    print(f"  Failed files: {len(failed_files)}")
-    print(f"  Classes in model: {len(classifier.classes_)}")
+    print(f"  Total files processed: {results['processed_files']}")
+    print(f"  Failed files: {results['failed_files']}")
+    print(f"  Classes in model: {len(results['class_names'])}")
 
     print("\nOverall Performance:")
-    print(f"  Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
-    print(f"  Macro avg Precision: {precision_macro:.4f}")
-    print(f"  Macro avg Recall: {recall_macro:.4f}")
-    print(f"  Macro avg F1-score: {f1_macro:.4f}")
-    print(f"  Weighted avg Precision: {precision_weighted:.4f}")
-    print(f"  Weighted avg Recall: {recall_weighted:.4f}")
-    print(f"  Weighted avg F1-score: {f1_weighted:.4f}")
+    print(f"  Accuracy: {results['accuracy']:.4f} ({results['accuracy']*100:.2f}%)")
+    print(f"  Macro avg Precision: {results['precision_macro']:.4f}")
+    print(f"  Macro avg Recall: {results['recall_macro']:.4f}")
+    print(f"  Macro avg F1-score: {results['f1_macro']:.4f}")
+    print(f"  Weighted avg Precision: {results['precision_weighted']:.4f}")
+    print(f"  Weighted avg Recall: {results['recall_weighted']:.4f}")
+    print(f"  Weighted avg F1-score: {results['f1_weighted']:.4f}")
 
     print("\nPer-Class Performance:")
     print(f"{'Class':<15} {'Precision':<10} {'Recall':<10} {'F1-Score':<10} {'Support':<10}")
     print("-" * 60)
 
-    for i, class_name in enumerate(classifier.classes_):
+    precision = results["per_class_metrics"]["precision"]
+    recall = results["per_class_metrics"]["recall"]
+    f1 = results["per_class_metrics"]["f1"]
+    support = results["per_class_metrics"]["support"]
+
+    for i, class_name in enumerate(results["class_names"]):
         if i < len(precision):  # Check if we have metrics for this class
             print(f"{class_name:<15} {precision[i]:<10.4f} {recall[i]:<10.4f} {f1[i]:<10.4f} {support[i]:<10}")
         else:
@@ -212,18 +144,21 @@ def evaluate_command(args):
     print("\nConfusion Matrix:")
     print("Rows: True labels, Columns: Predicted labels")
 
+    cm = results["confusion_matrix"]
+    class_names = results["class_names"]
+
     # Print class names as column headers
     header = "        "
-    for i, class_name in enumerate(classifier.classes_):
+    for class_name in class_names:
         header += f"{class_name[:6]:<8}"
     print(header)
 
     # Print confusion matrix with row labels
-    for i, class_name in enumerate(classifier.classes_):
+    for i, class_name in enumerate(class_names):
         row = f"{class_name[:6]:<8}"
-        for j in range(len(classifier.classes_)):
-            if i < cm.shape[0] and j < cm.shape[1]:
-                row += f"{cm[i, j]:<8}"
+        for j in range(len(class_names)):
+            if i < len(cm) and j < len(cm[i]):
+                row += f"{cm[i][j]:<8}"
             else:
                 row += f"{'0':<8}"
         print(row)
