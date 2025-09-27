@@ -5,7 +5,7 @@ This module provides the machine learning classifier for circuit type recognitio
 and related functions for training, inference, and model persistence.
 """
 
-from typing import Dict, List, Union, Optional, Any
+from typing import Dict, List, Union, Optional, Any, Tuple
 import numpy as np
 from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
@@ -188,70 +188,46 @@ class CircuitClassifier:
         if not self._trained:
             raise ValueError("Classifier must be trained before evaluation")
 
-        test_path = Path(test_dir)
-        if not test_path.exists():
-            raise FileNotFoundError(f"Test directory not found: {test_dir}")
-
-        print(f"Scanning test dataset directory: {test_path}")
-
         # Step 1: Find all UZF files in test dataset
-        uzf_files = list(test_path.rglob("*.uzf"))
-        if not uzf_files:
-            raise ValueError(f"No UZF files found in test directory: {test_dir}")
+        uzf_files = self.validate_directory_and_find_uzf_files(test_dir)
 
-        print(f"Found {len(uzf_files)} test files")
+        # Step 2: Extract features from all files
+        all_features, failed_files = self.process_uzf_files(uzf_files, "test files")
 
-        # Step 2: Make predictions and collect results
+        # Step 3: Make predictions and collect results
         y_true = []  # True class names
         y_pred = []  # Predicted class names
         y_true_indices = []  # True class indices
         y_pred_indices = []  # Predicted class indices
-        failed_files = []
 
-        for i, uzf_file in enumerate(uzf_files):
-            try:
-                # Extract features and get true class
-                features = extract_features_from_uzf(uzf_file)
-                true_class = features.class_name
+        for features in all_features:
+            true_class = features.class_name
 
-                if not true_class:
-                    print(f"Warning: Skipping file with no class label: {uzf_file}")
-                    continue
-
-                # Make prediction
-                result = predict_circuit_class(uzf_file, self)
-                pred_class = result["class_name"]
-
-                # Store results
-                y_true.append(true_class)
-                y_pred.append(pred_class)
-
-                # Convert to indices for sklearn metrics
-                if true_class in self._class_to_index:
-                    y_true_indices.append(self._class_to_index[true_class])
-                else:
-                    print(f"Warning: True class '{true_class}' not in training classes, skipping file: {uzf_file}")
-                    y_true.pop()  # Remove the last added true class
-                    y_pred.pop()  # Remove the last added pred class
-                    continue
-
-                y_pred_indices.append(self._class_to_index[pred_class])
-
-                # Progress reporting
-                if (i + 1) % 50 == 0:
-                    print(f"Processed {i + 1}/{len(uzf_files)} files...")
-
-            except Exception as e:
-                print(f"Warning: Failed to process {uzf_file}: {e}")
-                failed_files.append(uzf_file)
+            if not true_class:
+                print("Warning: Skipping file with no class label")
                 continue
+
+            # Make prediction using extracted features
+            class_id = self.predict(features)
+            pred_class = self.classes_[class_id]
+
+            # Store results
+            y_true.append(true_class)
+            y_pred.append(pred_class)
+
+            # Convert to indices for sklearn metrics
+            if true_class in self._class_to_index:
+                y_true_indices.append(self._class_to_index[true_class])
+            else:
+                print(f"Warning: True class '{true_class}' not in training classes, skipping")
+                y_true.pop()  # Remove the last added true class
+                y_pred.pop()  # Remove the last added pred class
+                continue
+
+            y_pred_indices.append(self._class_to_index[pred_class])
 
         if not y_true:
             raise ValueError("No valid predictions were made")
-
-        print(f"Successfully processed {len(y_true)} files")
-        if failed_files:
-            print(f"Failed to process {len(failed_files)} files")
 
         # Step 3: Calculate metrics
         y_true_indices = np.array(y_true_indices)
@@ -299,6 +275,78 @@ class CircuitClassifier:
 
         return results
 
+    @classmethod
+    def validate_directory_and_find_uzf_files(cls, directory: Union[str, Path]) -> List[Path]:
+        """
+        Validate directory exists and find all UZF files within it.
+
+        Args:
+            directory: Path to directory to validate and search
+
+        Returns:
+            List of Path objects for all UZF files found
+
+        Raises:
+            FileNotFoundError: If directory doesn't exist
+            ValueError: If no UZF files found in directory
+        """
+        dir_path = Path(directory)
+        if not dir_path.exists():
+            raise FileNotFoundError(f"Directory not found: {directory}")
+
+        print(f"Scanning directory: {dir_path}")
+
+        uzf_files = list(dir_path.rglob("*.uzf"))
+        if not uzf_files:
+            raise ValueError(f"No UZF files found in directory: {directory}")
+
+        print(f"Found {len(uzf_files)} UZF files")
+        return uzf_files
+
+    @classmethod
+    def process_uzf_files(cls, uzf_files: List[Path], progress_message: str = "files") \
+            -> Tuple[List[CircuitFeatures], List[Path]]:
+        """
+        Process a list of UZF files and extract features from each.
+
+        Args:
+            uzf_files: List of UZF file paths to process
+            progress_message: Message to show in progress reports
+
+        Returns:
+            Tuple containing:
+                - List of successfully extracted CircuitFeatures objects
+                - List of failed file paths
+
+        Raises:
+            ValueError: If no features could be extracted from any files
+        """
+        all_features = []
+        failed_files = []
+
+        for i, uzf_file in enumerate(uzf_files):
+            try:
+                features = extract_features_from_uzf(uzf_file)
+                all_features.append(features)
+
+                # Progress reporting every 50 files
+                if (i + 1) % 50 == 0:
+                    print(f"Processed {i + 1}/{len(uzf_files)} {progress_message}...")
+
+            except Exception as e:
+                print(f"Warning: Failed to process {uzf_file}: {e}")
+                failed_files.append(uzf_file)
+                continue
+
+        if not all_features:
+            raise ValueError("Failed to extract features from any UZF files")
+
+        print(f"Successfully processed {len(all_features)} {progress_message}")
+        if failed_files:
+            print(f"Failed to process {len(failed_files)} {progress_message}")
+
+        return all_features, failed_files
+
 
 def train_classifier(dataset_dir: Union[str, Path],
                      model_params: Optional[Dict[str, Any]] = None) -> CircuitClassifier:
@@ -319,43 +367,10 @@ def train_classifier(dataset_dir: Union[str, Path],
         FileNotFoundError: If dataset directory doesn't exist
         ValueError: If dataset structure is invalid or insufficient data
     """
-    dataset_path = Path(dataset_dir)
-    if not dataset_path.exists():
-        raise FileNotFoundError(f"Dataset directory not found: {dataset_dir}")
-
-    print(f"Scanning dataset directory: {dataset_path}")
 
     # Step 1: Find all UZF files and extract features
-    uzf_files = list(dataset_path.rglob("*.uzf"))
-    if not uzf_files:
-        raise ValueError(f"No UZF files found in dataset directory: {dataset_dir}")
-
-    print(f"Found {len(uzf_files)} UZF files")
-
-    # Extract features from all UZF files
-    all_features = []
-    failed_files = []
-
-    for i, uzf_file in enumerate(uzf_files):
-        try:
-            features = extract_features_from_uzf(uzf_file)
-            all_features.append(features)
-
-            # Progress reporting
-            if (i + 1) % 50 == 0:
-                print(f"Processed {i + 1}/{len(uzf_files)} files...")
-
-        except Exception as e:
-            print(f"Failed to extract features from {uzf_file}: {e}")
-            failed_files.append(uzf_file)
-            continue
-
-    if not all_features:
-        raise ValueError("Failed to extract features from any UZF files")
-
-    print(f"Successfully extracted features from {len(all_features)} files")
-    if failed_files:
-        print(f"Failed to process {len(failed_files)} files")
+    uzf_files = CircuitClassifier.validate_directory_and_find_uzf_files(dataset_dir)
+    all_features, failed_files = CircuitClassifier.process_uzf_files(uzf_files, "training files")
 
     # Step 2: Create set of unique class names
     class_names_set = set()
