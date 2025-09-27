@@ -90,11 +90,11 @@ def extract_features_to_file(uzf_file, dataset_dir, output_dir, verbose=False):
 
         # Set up environment to include project root in Python path
         env = os.environ.copy()
-        current_pythonpath = env.get('PYTHONPATH', '')
+        current_pythonpath = env.get("PYTHONPATH", "")
         if current_pythonpath:
-            env['PYTHONPATH'] = f"{project_root}{os.pathsep}{current_pythonpath}"
+            env["PYTHONPATH"] = f"{project_root}{os.pathsep}{current_pythonpath}"
         else:
-            env['PYTHONPATH'] = str(project_root)
+            env["PYTHONPATH"] = str(project_root)
 
         with open(output_path, "w", encoding="utf-8") as output_file:
             result = subprocess.run(
