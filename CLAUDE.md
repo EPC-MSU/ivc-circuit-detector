@@ -46,8 +46,12 @@ pip install -r requirements.txt
 
 For running any python code (dataset generation, testing, etc) you must always activate virtual environment first
 ```bash
+# For Windows
 venv\Scripts\activate
+# For Linux
+source venv/bin/activate
 ```
+Linter rule: Use double quotes for strings, not single quotes.
 
 ### Dataset Generation
 ```bash
