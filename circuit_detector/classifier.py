@@ -10,6 +10,7 @@ import numpy as np
 from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
+from sklearn.utils.class_weight import compute_class_weight
 import pickle
 
 from .features import CircuitFeatures, extract_features_from_uzf
@@ -408,12 +409,23 @@ def train_classifier(dataset_dir: Union[str, Path],
             "random_state": 42,
             "max_depth": 10,
             "min_samples_split": 5,
-            "min_samples_leaf": 2
+            "min_samples_leaf": 2,
+            "class_weight": "balanced"
         }
 
     print(f"Training Random Forest with parameters: {model_params}")
 
     rf_model = RandomForestClassifier(**model_params)
+
+    # Log class weights
+    class_weights = compute_class_weight(
+        class_weight="balanced",
+        classes=np.unique(y),
+        y=y
+    )
+    class_weight_dict = dict(zip(np.unique(y), class_weights))
+    print(f"Using balanced class weights: {class_weight_dict}")
+
     rf_model.fit(x, y)
 
     # Step 5: Create and configure classifier
