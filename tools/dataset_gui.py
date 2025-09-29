@@ -333,10 +333,10 @@ class DatasetGUI:
             from_=0.0,
             to=100.0,
             orient="horizontal",
-            state="disabled",
             variable=self.confidence_var,
             length=200
         )
+        self.confidence_scale.state(["disabled"])
         self.confidence_scale.pack(side="left", padx=(10, 5))
 
         self.confidence_label = ttk.Label(class_filter_frame, text="80.0%")
@@ -382,7 +382,7 @@ class DatasetGUI:
         self.filter_figure = Figure(figsize=(10, 6), dpi=80)
         self.filter_canvas = FigureCanvasTkAgg(self.filter_figure, master=graph_frame)
         self.filter_canvas.get_tk_widget().pack(fill="x", expand=True, padx=5, pady=5)
-        
+
         # Clear the initial plot (after all widgets are created)
         self.clear_plot()
 
