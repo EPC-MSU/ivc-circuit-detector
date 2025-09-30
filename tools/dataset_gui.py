@@ -755,43 +755,8 @@ class DatasetGUI:
                     self.log_train_results("Evaluating model...")
                     results = classifier.evaluate(dataset_path)
 
-                    # Display results
-                    self.log_train_results("\n" + "=" * 60)
-                    self.log_train_results("MODEL EVALUATION RESULTS")
-                    self.log_train_results("=" * 60)
-
-                    self.log_train_results("\nDataset Summary:")
-                    self.log_train_results(f"  Total files processed: {results['processed_files']}")
-                    self.log_train_results(f"  Failed files: {results['failed_files']}")
-                    self.log_train_results(f"  Classes in model: {len(results['class_names'])}")
-
-                    self.log_train_results("\nOverall Performance:")
-                    self.log_train_results(f"✓ Accuracy: {results['accuracy']:.4f} ({results['accuracy'] * 100:.2f}%)")
-                    self.log_train_results(f"✓ Macro avg Precision: {results['precision_macro']:.4f}")
-                    self.log_train_results(f"✓ Macro avg Recall: {results['recall_macro']:.4f}")
-                    self.log_train_results(f"  Macro avg F1-score: {results['f1_macro']:.4f}")
-                    self.log_train_results(f"  Weighted avg Precision: {results['precision_weighted']:.4f}")
-                    self.log_train_results(f"  Weighted avg Recall: {results['recall_weighted']:.4f}")
-                    self.log_train_results(f"  Weighted avg F1-score: {results['f1_weighted']:.4f}")
-
-                    self.log_train_results("\nPer-Class Performance:")
-                    self.log_train_results(
-                        f"{'Class':<15} {'Precision':<10} {'Recall':<10} {'F1-Score':<10} {'Support':<10}")
-                    self.log_train_results("-" * 60)
-
-                    precision = results["per_class_metrics"]["precision"]
-                    recall = results["per_class_metrics"]["recall"]
-                    f1 = results["per_class_metrics"]["f1"]
-                    support = results["per_class_metrics"]["support"]
-
-                    for i, class_name in enumerate(results["class_names"]):
-                        if i < len(precision):
-                            self.log_train_results(
-                                f"{class_name:<15} {precision[i]:<10.4f} {recall[i]:<10.4f} {f1[i]:<10.4f} {support[i]:<10}")
-                        else:
-                            self.log_train_results(f"{class_name:<15} {'N/A':<10} {'N/A':<10} {'N/A':<10} {'0':<10}")
-
-                    self.log_train_results("=" * 60)
+                    # Display results using unified function
+                    CircuitClassifier.display_evaluation_results(results, self.log_train_results)
                     self.log_train_results("Model validation completed successfully!")
 
                     # Show success message in main thread
@@ -952,8 +917,7 @@ class DatasetGUI:
                     continue
 
                 # Display this file
-                self.display_current_file(current_file,
-                                          voltages,
+                self.display_current_file(voltages,
                                           currents,
                                           actual_class,
                                           predicted_class,
