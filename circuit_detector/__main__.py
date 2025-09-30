@@ -99,71 +99,11 @@ def evaluate_command(args):
         results = classifier.evaluate(test_dir)
 
         # Display formatted results
-        _display_evaluation_results(results)
+        CircuitClassifier.display_evaluation_results(results)
 
     except Exception as e:
         logging.error(f"Evaluation failed: {e}")
         sys.exit(1)
-
-
-def _display_evaluation_results(results: dict):
-    """Display evaluation results in a formatted manner."""
-    print("\n" + "="*60)
-    print("MODEL EVALUATION RESULTS")
-    print("="*60)
-
-    print("\nDataset Summary:")
-    print(f"  Total files processed: {results['processed_files']}")
-    print(f"  Failed files: {results['failed_files']}")
-    print(f"  Classes in model: {len(results['class_names'])}")
-
-    print("\nOverall Performance:")
-    print(f"  Accuracy: {results['accuracy']:.4f} ({results['accuracy']*100:.2f}%)")
-    print(f"  Macro avg Precision: {results['precision_macro']:.4f}")
-    print(f"  Macro avg Recall: {results['recall_macro']:.4f}")
-    print(f"  Macro avg F1-score: {results['f1_macro']:.4f}")
-    print(f"  Weighted avg Precision: {results['precision_weighted']:.4f}")
-    print(f"  Weighted avg Recall: {results['recall_weighted']:.4f}")
-    print(f"  Weighted avg F1-score: {results['f1_weighted']:.4f}")
-
-    print("\nPer-Class Performance:")
-    print(f"{'Class':<15} {'Precision':<10} {'Recall':<10} {'F1-Score':<10} {'Support':<10}")
-    print("-" * 60)
-
-    precision = results["per_class_metrics"]["precision"]
-    recall = results["per_class_metrics"]["recall"]
-    f1 = results["per_class_metrics"]["f1"]
-    support = results["per_class_metrics"]["support"]
-
-    for i, class_name in enumerate(results["class_names"]):
-        if i < len(precision):  # Check if we have metrics for this class
-            print(f"{class_name:<15} {precision[i]:<10.4f} {recall[i]:<10.4f} {f1[i]:<10.4f} {support[i]:<10}")
-        else:
-            print(f"{class_name:<15} {'N/A':<10} {'N/A':<10} {'N/A':<10} {'0':<10}")
-
-    print("\nConfusion Matrix:")
-    print("Rows: True labels, Columns: Predicted labels")
-
-    cm = results["confusion_matrix"]
-    class_names = results["class_names"]
-
-    # Print class names as column headers
-    header = "        "
-    for class_name in class_names:
-        header += f"{class_name[:6]:<8}"
-    print(header)
-
-    # Print confusion matrix with row labels
-    for i, class_name in enumerate(class_names):
-        row = f"{class_name[:6]:<8}"
-        for j in range(len(class_names)):
-            if i < len(cm) and j < len(cm[i]):
-                row += f"{cm[i][j]:<8}"
-            else:
-                row += f"{'0':<8}"
-        print(row)
-
-    print("="*60)
 
 
 def extract_features_command(args):

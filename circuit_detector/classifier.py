@@ -276,6 +276,77 @@ class CircuitClassifier:
 
         return results
 
+    @staticmethod
+    def display_evaluation_results(results: Dict[str, Any], logger_func=None) -> None:
+        """
+        Display evaluation results in a formatted manner.
+
+        Args:
+            results: Dictionary containing evaluation metrics from evaluate() method
+            logger_func: Optional function to use for output (defaults to print)
+        """
+        # Use print function if no logger provided
+        if logger_func is None:
+            logger_func = print
+
+        logger_func("\n" + "="*60)
+        logger_func("MODEL EVALUATION RESULTS")
+        logger_func("="*60)
+
+        logger_func("\nDataset Summary:")
+        logger_func(f"  Total files processed: {results['processed_files']}")
+        logger_func(f"  Failed files: {results['failed_files']}")
+        logger_func(f"  Classes in model: {len(results['class_names'])}")
+
+        logger_func("\nOverall Performance:")
+        logger_func(f"  Accuracy: {results['accuracy']:.4f} ({results['accuracy']*100:.2f}%)")
+        logger_func(f"  Macro avg Precision: {results['precision_macro']:.4f}")
+        logger_func(f"  Macro avg Recall: {results['recall_macro']:.4f}")
+        logger_func(f"  Macro avg F1-score: {results['f1_macro']:.4f}")
+        logger_func(f"  Weighted avg Precision: {results['precision_weighted']:.4f}")
+        logger_func(f"  Weighted avg Recall: {results['recall_weighted']:.4f}")
+        logger_func(f"  Weighted avg F1-score: {results['f1_weighted']:.4f}")
+
+        logger_func("\nPer-Class Performance:")
+        logger_func(f"{'Class':<15} {'Precision':<10} {'Recall':<10} {'F1-Score':<10} {'Support':<10}")
+        logger_func("-" * 60)
+
+        precision = results["per_class_metrics"]["precision"]
+        recall = results["per_class_metrics"]["recall"]
+        f1 = results["per_class_metrics"]["f1"]
+        support = results["per_class_metrics"]["support"]
+
+        for i, class_name in enumerate(results["class_names"]):
+            if i < len(precision):  # Check if we have metrics for this class
+                logger_func(
+                    f"{class_name:<15} {precision[i]:<10.4f} {recall[i]:<10.4f} {f1[i]:<10.4f} {support[i]:<10}")
+            else:
+                logger_func(f"{class_name:<15} {'N/A':<10} {'N/A':<10} {'N/A':<10} {'0':<10}")
+
+        logger_func("\nConfusion Matrix:")
+        logger_func("Rows: True labels, Columns: Predicted labels")
+
+        cm = results["confusion_matrix"]
+        class_names = results["class_names"]
+
+        # Print class names as column headers
+        header = "        "
+        for class_name in class_names:
+            header += f"{class_name[:6]:<8}"
+        logger_func(header)
+
+        # Print confusion matrix with row labels
+        for i, class_name in enumerate(class_names):
+            row = f"{class_name[:6]:<8}"
+            for j in range(len(class_names)):
+                if i < len(cm) and j < len(cm[i]):
+                    row += f"{cm[i][j]:<8}"
+                else:
+                    row += f"{'0':<8}"
+            logger_func(row)
+
+        logger_func("="*60)
+
     @classmethod
     def validate_directory_and_find_uzf_files(cls, directory: Union[str, Path]) -> List[Path]:
         """
@@ -362,6 +433,7 @@ def tune_classes(class_weights: Dict[str, float]) -> Dict[str, float]:
         else:
             raise ValueError(f"Unknown class_name {class_name} found. Can't tune weights.")
     return class_weights
+
 
 def train_classifier(dataset_dir: Union[str, Path],
                      model_params: Optional[Dict[str, Any]] = None) -> CircuitClassifier:

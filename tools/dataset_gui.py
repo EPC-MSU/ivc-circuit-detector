@@ -13,43 +13,28 @@ import subprocess
 from pathlib import Path
 import threading
 import traceback
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
 from epcore.filemanager.ufiv import load_board_from_ufiv
-import glob
-
-# Import circuit_detector module API
-train_classifier = None
-CircuitClassifier = None
 
 
-def import_circuit_detector():
-    """Import circuit_detector module with proper path handling"""
-    global train_classifier, CircuitClassifier
+global circuit_detector
 
-    try:
-        # Add the project root to Python path if not already there
-        project_root = Path(__file__).parent.parent
-        print(f"Project root: {project_root}")
-        print(f"Circuit detector path: {project_root / 'circuit_detector'}")
-        print(f"Circuit detector exists: {(project_root / 'circuit_detector').exists()}")
 
-        if str(project_root) not in sys.path:
-            sys.path.insert(0, str(project_root))
-            print(f"Added to sys.path: {project_root}")
+def complex_import():
+    global circuit_detector
+    parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    sys.path.append(parent_dir)
+    import circuit_detector
 
-        from circuit_detector.classifier import train_classifier, CircuitClassifier
-        print("Successfully imported circuit_detector module")
-        return True
-    except ImportError as e:
-        print(f"Warning: Could not import circuit_detector module: {e}")
-        print(f"Python path: {sys.path[:3]}...")  # Show first few paths
-        return False
-    except Exception as e:
-        print(f"Unexpected error importing circuit_detector: {e}")
-        return False
+
+complex_import()
+
+
+class FieldValidationError(Exception):
+    """Custom exception for field validation errors."""
+    pass
 
 
 class DatasetGUI:
@@ -61,9 +46,6 @@ class DatasetGUI:
         # Set project root path
         self.project_root = Path(__file__).parent.parent
         self.parameters_file = self.project_root / "generate_dataset" / "parameters_variations.json"
-
-        # Try to import circuit_detector module
-        self.circuit_detector_available = import_circuit_detector()
 
         # Filtering state variables
         self.current_classifier = None
@@ -83,6 +65,62 @@ class DatasetGUI:
 
         # Load initial parameters
         self.load_parameters()
+
+    def _safe_get_field(self, field_var, field_name, allow_empty=False):
+        """
+        Safely get and validate a field value from tkinter StringVar.
+
+        Args:
+            field_var: tkinter StringVar containing the field value
+            field_name: Human-readable name for error messages
+            allow_empty: If True, empty values are allowed
+
+        Returns:
+            str: The field value if valid
+
+        Raises:
+            FieldValidationError: If field validation fails
+        """
+        try:
+            value = field_var.get().strip()
+            if not allow_empty and not value:
+                raise FieldValidationError(f"Please specify {field_name}")
+            return value
+        except Exception as e:
+            if isinstance(e, FieldValidationError):
+                raise
+            raise FieldValidationError(f"Error reading {field_name}: {e}")
+
+    def _safe_parse_model_params(self, params_str):
+        """
+        Safely parse model parameters from string format.
+
+        Args:
+            params_str: String in format "key=value,key=value"
+
+        Returns:
+            dict: Parsed parameters
+
+        Raises:
+            FieldValidationError: If parameter parsing fails
+        """
+        if not params_str:
+            return {}
+
+        model_params = {}
+        try:
+            for param in params_str.split(","):
+                key, value = param.split("=")
+                key = key.strip()
+                value = value.strip()
+                try:
+                    # Try to convert to number if possible
+                    model_params[key] = float(value) if "." in value else int(value)
+                except ValueError:
+                    model_params[key] = value
+            return model_params
+        except Exception as e:
+            raise FieldValidationError(f"Invalid model parameters format: {e}")
 
     def create_dataset_tab(self):
         """Create the dataset generation tab"""
@@ -611,54 +649,22 @@ class DatasetGUI:
 
     def train_model(self):
         """Execute model training using circuit_detector API"""
-        if not self.circuit_detector_available or train_classifier is None:
-            # Try importing again
-            if not import_circuit_detector():
-                messagebox.showerror("Error",
-                                     "Circuit detector module not available.\n\n"
-                                     "Please ensure you are running from the project root directory\n"
-                                     "and that the circuit_detector module is properly installed.")
-                return
-
-        # Get parameters
-        train_dataset = self.train_dataset_var.get().strip()
-        model_file = self.train_model_file_var.get().strip()
-        model_params_str = self.model_params_var.get().strip()
-
-        if not train_dataset:
-            messagebox.showerror("Error", "Please specify training dataset directory")
-            return
-
-        if not model_file:
-            messagebox.showerror("Error", "Please specify output model file path")
-            return
-
-        # Parse model parameters
-        model_params = {}
-        if model_params_str:
-            try:
-                for param in model_params_str.split(","):
-                    key, value = param.split("=")
-                    key = key.strip()
-                    value = value.strip()
-                    try:
-                        # Try to convert to number if possible
-                        model_params[key] = float(value) if "." in value else int(value)
-                    except ValueError:
-                        model_params[key] = value
-            except Exception as e:
-                messagebox.showerror("Error", f"Invalid model parameters format: {e}")
-                return
-
-        self.log_train_results("Starting model training...")
-        self.log_train_results(f"Dataset: {train_dataset}")
-        self.log_train_results(f"Output model: {model_file}")
-        if model_params:
-            self.log_train_results(f"Parameters: {model_params}")
 
         # Run training in a separate thread to avoid blocking the GUI
         def training_thread():
             try:
+                # Get and validate all training fields
+                train_dataset = self._safe_get_field(self.train_dataset_var, "training dataset directory")
+                model_file = self._safe_get_field(self.train_model_file_var, "output model file path")
+                model_params_str = self._safe_get_field(self.model_params_var, "model parameters", allow_empty=True)
+                model_params = self._safe_parse_model_params(model_params_str)
+
+                self.log_train_results("Starting model training...")
+                self.log_train_results(f"Dataset: {train_dataset}")
+                self.log_train_results(f"Output model: {model_file}")
+                if model_params:
+                    self.log_train_results(f"Parameters: {model_params}")
+
                 # Change to project root directory
                 original_cwd = os.getcwd()
                 os.chdir(self.project_root)
@@ -670,7 +676,7 @@ class DatasetGUI:
                         dataset_path = self.project_root / dataset_path
 
                     self.log_train_results("Training classifier...")
-                    classifier = train_classifier(dataset_path, model_params if model_params else None)
+                    classifier = circuit_detector.train_classifier(dataset_path, model_params if model_params else None)
 
                     # Save the model
                     model_path = Path(model_file)
@@ -697,6 +703,10 @@ class DatasetGUI:
                 finally:
                     os.chdir(original_cwd)
 
+            except FieldValidationError as e:
+                messagebox.showerror("Error", str(e))
+                return
+
             except Exception as e:
                 error_msg = f"Unexpected error: {str(e)}"
                 self.log_train_results(error_msg)
@@ -708,34 +718,18 @@ class DatasetGUI:
 
     def validate_model(self):
         """Execute model validation using CircuitClassifier API"""
-        if not self.circuit_detector_available or CircuitClassifier is None:
-            # Try importing again
-            if not import_circuit_detector():
-                messagebox.showerror("Error",
-                                     "Circuit detector module not available.\n\n"
-                                     "Please ensure you are running from the project root directory\n"
-                                     "and that the circuit_detector module is properly installed.")
-                return
-
-        # Get parameters
-        val_dataset = self.val_dataset_var.get().strip()
-        model_file = self.val_model_file_var.get().strip()
-
-        if not val_dataset:
-            messagebox.showerror("Error", "Please specify validation dataset directory")
-            return
-
-        if not model_file:
-            messagebox.showerror("Error", "Please specify model file path")
-            return
-
-        self.log_train_results("Starting model validation...")
-        self.log_train_results(f"Model: {model_file}")
-        self.log_train_results(f"Validation dataset: {val_dataset}")
 
         # Run validation in a separate thread to avoid blocking the GUI
         def validation_thread():
             try:
+                # Get and validate all validation fields
+                val_dataset = self._safe_get_field(self.val_dataset_var, "validation dataset directory")
+                model_file = self._safe_get_field(self.val_model_file_var, "model file path")
+
+                self.log_train_results("Starting model validation...")
+                self.log_train_results(f"Model: {model_file}")
+                self.log_train_results(f"Validation dataset: {val_dataset}")
+
                 # Change to project root directory
                 original_cwd = os.getcwd()
                 os.chdir(self.project_root)
@@ -747,7 +741,7 @@ class DatasetGUI:
                         model_path = self.project_root / model_path
 
                     self.log_train_results("Loading model...")
-                    classifier = CircuitClassifier.load(model_path)
+                    classifier = circuit_detector.CircuitClassifier.load(model_path)
 
                     # Evaluate the model
                     dataset_path = Path(val_dataset)
@@ -757,43 +751,8 @@ class DatasetGUI:
                     self.log_train_results("Evaluating model...")
                     results = classifier.evaluate(dataset_path)
 
-                    # Display results
-                    self.log_train_results("\n" + "=" * 60)
-                    self.log_train_results("MODEL EVALUATION RESULTS")
-                    self.log_train_results("=" * 60)
-
-                    self.log_train_results("\nDataset Summary:")
-                    self.log_train_results(f"  Total files processed: {results['processed_files']}")
-                    self.log_train_results(f"  Failed files: {results['failed_files']}")
-                    self.log_train_results(f"  Classes in model: {len(results['class_names'])}")
-
-                    self.log_train_results("\nOverall Performance:")
-                    self.log_train_results(f"✓ Accuracy: {results['accuracy']:.4f} ({results['accuracy'] * 100:.2f}%)")
-                    self.log_train_results(f"✓ Macro avg Precision: {results['precision_macro']:.4f}")
-                    self.log_train_results(f"✓ Macro avg Recall: {results['recall_macro']:.4f}")
-                    self.log_train_results(f"  Macro avg F1-score: {results['f1_macro']:.4f}")
-                    self.log_train_results(f"  Weighted avg Precision: {results['precision_weighted']:.4f}")
-                    self.log_train_results(f"  Weighted avg Recall: {results['recall_weighted']:.4f}")
-                    self.log_train_results(f"  Weighted avg F1-score: {results['f1_weighted']:.4f}")
-
-                    self.log_train_results("\nPer-Class Performance:")
-                    self.log_train_results(
-                        f"{'Class':<15} {'Precision':<10} {'Recall':<10} {'F1-Score':<10} {'Support':<10}")
-                    self.log_train_results("-" * 60)
-
-                    precision = results["per_class_metrics"]["precision"]
-                    recall = results["per_class_metrics"]["recall"]
-                    f1 = results["per_class_metrics"]["f1"]
-                    support = results["per_class_metrics"]["support"]
-
-                    for i, class_name in enumerate(results["class_names"]):
-                        if i < len(precision):
-                            self.log_train_results(
-                                f"{class_name:<15} {precision[i]:<10.4f} {recall[i]:<10.4f} {f1[i]:<10.4f} {support[i]:<10}")
-                        else:
-                            self.log_train_results(f"{class_name:<15} {'N/A':<10} {'N/A':<10} {'N/A':<10} {'0':<10}")
-
-                    self.log_train_results("=" * 60)
+                    # Display results using unified function
+                    circuit_detector.CircuitClassifier.display_evaluation_results(results, self.log_train_results)
                     self.log_train_results("Model validation completed successfully!")
 
                     # Show success message in main thread
@@ -809,6 +768,10 @@ class DatasetGUI:
 
                 finally:
                     os.chdir(original_cwd)
+
+            except FieldValidationError as e:
+                messagebox.showerror("Error", str(e))
+                return
 
             except Exception as e:
                 error_msg = f"Unexpected error: {str(e)}"
@@ -836,7 +799,10 @@ class DatasetGUI:
 
     def browse_filter_dataset_folder(self):
         """Browse for filter dataset directory"""
-        directory = filedialog.askdirectory(initialdir=self.project_root, title="Select Dataset Directory for Filtering")
+        directory = filedialog.askdirectory(
+            initialdir=self.project_root,
+            title="Select Dataset Directory for Filtering"
+        )
         if directory:
             try:
                 rel_path = Path(directory).relative_to(self.project_root)
@@ -851,38 +817,26 @@ class DatasetGUI:
         else:
             self.confidence_scale.state(["!disabled"])
 
-    def update_confidence_label(self, *args):
+    def update_confidence_label(self):
         """Update confidence level label when slider changes"""
         self.confidence_label.config(text=f"{self.confidence_var.get():.1f}%")
 
     def start_filtering(self):
         """Initialize filtering process"""
-        if not self.circuit_detector_available or CircuitClassifier is None:
-            if not import_circuit_detector():
-                messagebox.showerror("Error",
-                                   "Circuit detector module not available.\n\n"
-                                   "Please ensure you are running from the project root directory\n"
-                                   "and that the circuit_detector module is properly installed.")
-                return
 
-        model_file = self.filter_model_var.get().strip()
-        dataset_folder = self.filter_dataset_var.get().strip()
-
-        if not model_file:
-            messagebox.showerror("Error", "Please specify model file path")
-            return
-
-        if not dataset_folder:
-            messagebox.showerror("Error", "Please specify dataset folder path")
-            return
-
-        # Load the classifier
+        # Get and validate all filtering fields and load the classifier
         try:
+            model_file = self._safe_get_field(self.filter_model_var, "model file path")
+            dataset_folder = self._safe_get_field(self.filter_dataset_var, "dataset folder path")
+
             model_path = Path(model_file)
             if not model_path.is_absolute():
                 model_path = self.project_root / model_path
 
-            self.current_classifier = CircuitClassifier.load(model_path)
+            self.current_classifier = circuit_detector.CircuitClassifier.load(model_path)
+        except FieldValidationError as e:
+            messagebox.showerror("Error", str(e))
+            return
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load model: {e}")
             return
@@ -951,7 +905,13 @@ class DatasetGUI:
                     continue
 
                 # Display this file
-                self.display_current_file(current_file, voltages, currents, actual_class, predicted_class, confidence, measurement_obj.settings)
+                self.display_current_file(voltages,
+                                          currents,
+                                          actual_class,
+                                          predicted_class,
+                                          confidence,
+                                          measurement_obj.settings
+                                          )
                 return
 
             except Exception as e:
@@ -963,8 +923,7 @@ class DatasetGUI:
         messagebox.showinfo("Complete", "All files have been processed!")
         self.clear_plot()
 
-
-    def display_current_file(self, current_file, voltages, currents, actual_class, predicted_class, confidence, measurement_settings):
+    def display_current_file(self, voltages, currents, actual_class, predicted_class, confidence, measurement_settings):
         """Display the current file's I-V curve and information"""
         # Clear previous plot
         self.filter_figure.clear()
@@ -972,7 +931,7 @@ class DatasetGUI:
         # Create subplot
         ax = self.filter_figure.add_subplot(111)
         ax.grid(True)
-        ax.plot(voltages, currents, 'b-', linewidth=2)
+        ax.plot(voltages, currents, "b-", linewidth=2)
         ax.set_xlabel("Voltage [V]")
         ax.set_ylabel("Current [A]")
         ax.set_title("IV-Characteristic")

@@ -18,7 +18,9 @@ This is a Python 3.6.8 project for equivalent circuit recognition from I-V curve
   - `simulator_ivc.py` - I-V curve simulation using PySpice
   - `validate_circuit_classes.py` - Circuit class validation
 - **`circuit_detector/`** - Detection/recognition module
-  - `detector.py` - Core logic for classificator
+  - `classifier.py` - Contains tool to work with a model for classification for training, evaluation and inference 
+  - `features.py` - Converting UZF files into features for future classification
+- ** 'tools' - Scripts and GUI software to work with dataset generation and model manually
 - **`dataset_train/`** - Generated output folder for training data
 - **`dataset_validate/`** - Generated output folder for validation data
 - **`model/`** - Folder for trained models
