@@ -318,7 +318,8 @@ class CircuitClassifier:
 
         for i, class_name in enumerate(results["class_names"]):
             if i < len(precision):  # Check if we have metrics for this class
-                logger_func(f"{class_name:<15} {precision[i]:<10.4f} {recall[i]:<10.4f} {f1[i]:<10.4f} {support[i]:<10}")
+                logger_func(
+                    f"{class_name:<15} {precision[i]:<10.4f} {recall[i]:<10.4f} {f1[i]:<10.4f} {support[i]:<10}")
             else:
                 logger_func(f"{class_name:<15} {'N/A':<10} {'N/A':<10} {'N/A':<10} {'0':<10}")
 

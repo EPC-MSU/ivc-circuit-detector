@@ -18,36 +18,18 @@ from matplotlib.figure import Figure
 import numpy as np
 from epcore.filemanager.ufiv import load_board_from_ufiv
 
-# Import circuit_detector module API
-train_classifier = None
-CircuitClassifier = None
+
+global circuit_detector
 
 
-def import_circuit_detector():
-    """Import circuit_detector module with proper path handling"""
-    global train_classifier, CircuitClassifier
+def complex_import():
+    global circuit_detector
+    parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    sys.path.append(parent_dir)
+    import circuit_detector
 
-    try:
-        # Add the project root to Python path if not already there
-        project_root = Path(__file__).parent.parent
-        print(f"Project root: {project_root}")
-        print(f"Circuit detector path: {project_root / 'circuit_detector'}")
-        print(f"Circuit detector exists: {(project_root / 'circuit_detector').exists()}")
 
-        if str(project_root) not in sys.path:
-            sys.path.insert(0, str(project_root))
-            print(f"Added to sys.path: {project_root}")
-
-        from circuit_detector.classifier import train_classifier, CircuitClassifier
-        print("Successfully imported circuit_detector module")
-        return True
-    except ImportError as e:
-        print(f"Warning: Could not import circuit_detector module: {e}")
-        print(f"Python path: {sys.path[:3]}...")  # Show first few paths
-        return False
-    except Exception as e:
-        print(f"Unexpected error importing circuit_detector: {e}")
-        return False
+complex_import()
 
 
 class DatasetGUI:
@@ -59,9 +41,6 @@ class DatasetGUI:
         # Set project root path
         self.project_root = Path(__file__).parent.parent
         self.parameters_file = self.project_root / "generate_dataset" / "parameters_variations.json"
-
-        # Try to import circuit_detector module
-        self.circuit_detector_available = import_circuit_detector()
 
         # Filtering state variables
         self.current_classifier = None
@@ -608,16 +587,6 @@ class DatasetGUI:
                 self.val_model_file_var.set(file_path)
 
     def train_model(self):
-        """Execute model training using circuit_detector API"""
-        if not self.circuit_detector_available or train_classifier is None:
-            # Try importing again
-            if not import_circuit_detector():
-                messagebox.showerror("Error",
-                                     "Circuit detector module not available.\n\n"
-                                     "Please ensure you are running from the project root directory\n"
-                                     "and that the circuit_detector module is properly installed.")
-                return
-
         # Get parameters
         train_dataset = self.train_dataset_var.get().strip()
         model_file = self.train_model_file_var.get().strip()
@@ -668,7 +637,7 @@ class DatasetGUI:
                         dataset_path = self.project_root / dataset_path
 
                     self.log_train_results("Training classifier...")
-                    classifier = train_classifier(dataset_path, model_params if model_params else None)
+                    classifier = circuit_detector.train_classifier(dataset_path, model_params if model_params else None)
 
                     # Save the model
                     model_path = Path(model_file)
@@ -705,16 +674,6 @@ class DatasetGUI:
         thread.start()
 
     def validate_model(self):
-        """Execute model validation using CircuitClassifier API"""
-        if not self.circuit_detector_available or CircuitClassifier is None:
-            # Try importing again
-            if not import_circuit_detector():
-                messagebox.showerror("Error",
-                                     "Circuit detector module not available.\n\n"
-                                     "Please ensure you are running from the project root directory\n"
-                                     "and that the circuit_detector module is properly installed.")
-                return
-
         # Get parameters
         val_dataset = self.val_dataset_var.get().strip()
         model_file = self.val_model_file_var.get().strip()
@@ -745,7 +704,7 @@ class DatasetGUI:
                         model_path = self.project_root / model_path
 
                     self.log_train_results("Loading model...")
-                    classifier = CircuitClassifier.load(model_path)
+                    classifier = circuit_detector.CircuitClassifier.load(model_path)
 
                     # Evaluate the model
                     dataset_path = Path(val_dataset)
@@ -756,7 +715,7 @@ class DatasetGUI:
                     results = classifier.evaluate(dataset_path)
 
                     # Display results using unified function
-                    CircuitClassifier.display_evaluation_results(results, self.log_train_results)
+                    circuit_detector.CircuitClassifier.display_evaluation_results(results, self.log_train_results)
                     self.log_train_results("Model validation completed successfully!")
 
                     # Show success message in main thread
@@ -817,20 +776,11 @@ class DatasetGUI:
         else:
             self.confidence_scale.state(["!disabled"])
 
-    def update_confidence_label(self, *args):
+    def update_confidence_label(self):
         """Update confidence level label when slider changes"""
         self.confidence_label.config(text=f"{self.confidence_var.get():.1f}%")
 
     def start_filtering(self):
-        """Initialize filtering process"""
-        if not self.circuit_detector_available or CircuitClassifier is None:
-            if not import_circuit_detector():
-                messagebox.showerror("Error",
-                                     "Circuit detector module not available.\n\n"
-                                     "Please ensure you are running from the project root directory\n"
-                                     "and that the circuit_detector module is properly installed.")
-                return
-
         model_file = self.filter_model_var.get().strip()
         dataset_folder = self.filter_dataset_var.get().strip()
 
@@ -848,7 +798,7 @@ class DatasetGUI:
             if not model_path.is_absolute():
                 model_path = self.project_root / model_path
 
-            self.current_classifier = CircuitClassifier.load(model_path)
+            self.current_classifier = circuit_detector.CircuitClassifier.load(model_path)
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load model: {e}")
             return

@@ -106,7 +106,6 @@ def evaluate_command(args):
         sys.exit(1)
 
 
-
 def extract_features_command(args):
     """Extract and display features from UZF file."""
     uzf_path = Path(args.uzf_file)
