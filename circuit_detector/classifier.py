@@ -10,6 +10,7 @@ import numpy as np
 from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
+from sklearn.utils.class_weight import compute_class_weight
 import pickle
 
 from .features import CircuitFeatures, extract_features_from_uzf
@@ -348,6 +349,20 @@ class CircuitClassifier:
         return all_features, failed_files
 
 
+def tune_classes(class_weights: Dict[str, float]) -> Dict[str, float]:
+    for class_name in class_weights.keys():
+        if class_name == "R":
+            class_weights[class_name] *= 2
+        elif class_name in ["DC", "D_C", "RC", "R_C", "R_D", "DR"]:
+            class_weights[class_name] *= 1.5
+        elif class_name in ["DCR", "DD_R"]:
+            class_weights[class_name] *= 1
+        elif class_name in ["DC(D_R)"]:
+            class_weights[class_name] *= 0.75
+        else:
+            raise ValueError(f"Unknown class_name {class_name} found. Can't tune weights.")
+    return class_weights
+
 def train_classifier(dataset_dir: Union[str, Path],
                      model_params: Optional[Dict[str, Any]] = None) -> CircuitClassifier:
     """
@@ -408,11 +423,25 @@ def train_classifier(dataset_dir: Union[str, Path],
             "random_state": 42,
             "max_depth": 10,
             "min_samples_split": 5,
-            "min_samples_leaf": 2
+            "min_samples_leaf": 2,
+            "class_weight": "balanced"
         }
 
+    # Log class weights
+    if model_params["class_weight"] != "balanced":
+        raise ValueError("Must use balanced class_weights with embedded tuning. Rewrite the code otherwise.")
+    class_weights = compute_class_weight(
+        class_weight="balanced",
+        classes=np.unique(y),
+        y=y
+    )
+    class_weight_dict = dict(zip(unique_classes, class_weights))
+    print(f"Balanced class weights: {class_weight_dict}")
+    # Tuning class weights to more simple classes
+    class_weight_dict = tune_classes(class_weight_dict)
+    model_params["class_weight"] = {class_to_index[key]: value for key, value in class_weight_dict.items()}
+    print(f"Tuned class weights: {class_weight_dict}")
     print(f"Training Random Forest with parameters: {model_params}")
-
     rf_model = RandomForestClassifier(**model_params)
     rf_model.fit(x, y)
 

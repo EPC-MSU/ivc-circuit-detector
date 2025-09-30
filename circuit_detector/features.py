@@ -66,6 +66,11 @@ class CircuitFeatures:
         """
         features = OrderedDict()
 
+        # Add measurement parameters as features
+        features["probe_signal_frequency [Hz]"] = self.measurement_settings.probe_signal_frequency
+        features["max_voltage [V]"] = self.measurement_settings.max_voltage
+        features["internal_resistance [Ohm]"] = self.measurement_settings.internal_resistance
+
         # Voltages and currents must be normalized because only their form matters for classification
         norm_voltage = self.voltages / self.measurement_settings.max_voltage
         max_current = self.measurement_settings.max_voltage / self.measurement_settings.internal_resistance
