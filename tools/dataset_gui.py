@@ -13,12 +13,10 @@ import subprocess
 from pathlib import Path
 import threading
 import traceback
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
 from epcore.filemanager.ufiv import load_board_from_ufiv
-import glob
 
 # Import circuit_detector module API
 train_classifier = None
@@ -836,7 +834,10 @@ class DatasetGUI:
 
     def browse_filter_dataset_folder(self):
         """Browse for filter dataset directory"""
-        directory = filedialog.askdirectory(initialdir=self.project_root, title="Select Dataset Directory for Filtering")
+        directory = filedialog.askdirectory(
+            initialdir=self.project_root,
+            title="Select Dataset Directory for Filtering"
+        )
         if directory:
             try:
                 rel_path = Path(directory).relative_to(self.project_root)
@@ -860,9 +861,9 @@ class DatasetGUI:
         if not self.circuit_detector_available or CircuitClassifier is None:
             if not import_circuit_detector():
                 messagebox.showerror("Error",
-                                   "Circuit detector module not available.\n\n"
-                                   "Please ensure you are running from the project root directory\n"
-                                   "and that the circuit_detector module is properly installed.")
+                                     "Circuit detector module not available.\n\n"
+                                     "Please ensure you are running from the project root directory\n"
+                                     "and that the circuit_detector module is properly installed.")
                 return
 
         model_file = self.filter_model_var.get().strip()
@@ -951,7 +952,14 @@ class DatasetGUI:
                     continue
 
                 # Display this file
-                self.display_current_file(current_file, voltages, currents, actual_class, predicted_class, confidence, measurement_obj.settings)
+                self.display_current_file(current_file,
+                                          voltages,
+                                          currents,
+                                          actual_class,
+                                          predicted_class,
+                                          confidence,
+                                          measurement_obj.settings
+                                          )
                 return
 
             except Exception as e:
@@ -963,8 +971,7 @@ class DatasetGUI:
         messagebox.showinfo("Complete", "All files have been processed!")
         self.clear_plot()
 
-
-    def display_current_file(self, current_file, voltages, currents, actual_class, predicted_class, confidence, measurement_settings):
+    def display_current_file(self, voltages, currents, actual_class, predicted_class, confidence, measurement_settings):
         """Display the current file's I-V curve and information"""
         # Clear previous plot
         self.filter_figure.clear()
@@ -972,7 +979,7 @@ class DatasetGUI:
         # Create subplot
         ax = self.filter_figure.add_subplot(111)
         ax.grid(True)
-        ax.plot(voltages, currents, 'b-', linewidth=2)
+        ax.plot(voltages, currents, "b-", linewidth=2)
         ax.set_xlabel("Voltage [V]")
         ax.set_ylabel("Current [A]")
         ax.set_title("IV-Characteristic")

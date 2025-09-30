@@ -363,6 +363,7 @@ def tune_classes(class_weights: Dict[str, float]) -> Dict[str, float]:
             raise ValueError(f"Unknown class_name {class_name} found. Can't tune weights.")
     return class_weights
 
+
 def train_classifier(dataset_dir: Union[str, Path],
                      model_params: Optional[Dict[str, Any]] = None) -> CircuitClassifier:
     """
