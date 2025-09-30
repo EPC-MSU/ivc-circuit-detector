@@ -32,6 +32,11 @@ def complex_import():
 complex_import()
 
 
+class FieldValidationError(Exception):
+    """Custom exception for field validation errors."""
+    pass
+
+
 class DatasetGUI:
     def __init__(self, root):
         self.root = root
@@ -60,6 +65,62 @@ class DatasetGUI:
 
         # Load initial parameters
         self.load_parameters()
+
+    def _safe_get_field(self, field_var, field_name, allow_empty=False):
+        """
+        Safely get and validate a field value from tkinter StringVar.
+
+        Args:
+            field_var: tkinter StringVar containing the field value
+            field_name: Human-readable name for error messages
+            allow_empty: If True, empty values are allowed
+
+        Returns:
+            str: The field value if valid
+
+        Raises:
+            FieldValidationError: If field validation fails
+        """
+        try:
+            value = field_var.get().strip()
+            if not allow_empty and not value:
+                raise FieldValidationError(f"Please specify {field_name}")
+            return value
+        except Exception as e:
+            if isinstance(e, FieldValidationError):
+                raise
+            raise FieldValidationError(f"Error reading {field_name}: {e}")
+
+    def _safe_parse_model_params(self, params_str):
+        """
+        Safely parse model parameters from string format.
+
+        Args:
+            params_str: String in format "key=value,key=value"
+
+        Returns:
+            dict: Parsed parameters
+
+        Raises:
+            FieldValidationError: If parameter parsing fails
+        """
+        if not params_str:
+            return {}
+
+        model_params = {}
+        try:
+            for param in params_str.split(","):
+                key, value = param.split("=")
+                key = key.strip()
+                value = value.strip()
+                try:
+                    # Try to convert to number if possible
+                    model_params[key] = float(value) if "." in value else int(value)
+                except ValueError:
+                    model_params[key] = value
+            return model_params
+        except Exception as e:
+            raise FieldValidationError(f"Invalid model parameters format: {e}")
 
     def create_dataset_tab(self):
         """Create the dataset generation tab"""
@@ -587,45 +648,23 @@ class DatasetGUI:
                 self.val_model_file_var.set(file_path)
 
     def train_model(self):
-        # Get parameters
-        train_dataset = self.train_dataset_var.get().strip()
-        model_file = self.train_model_file_var.get().strip()
-        model_params_str = self.model_params_var.get().strip()
-
-        if not train_dataset:
-            messagebox.showerror("Error", "Please specify training dataset directory")
-            return
-
-        if not model_file:
-            messagebox.showerror("Error", "Please specify output model file path")
-            return
-
-        # Parse model parameters
-        model_params = {}
-        if model_params_str:
-            try:
-                for param in model_params_str.split(","):
-                    key, value = param.split("=")
-                    key = key.strip()
-                    value = value.strip()
-                    try:
-                        # Try to convert to number if possible
-                        model_params[key] = float(value) if "." in value else int(value)
-                    except ValueError:
-                        model_params[key] = value
-            except Exception as e:
-                messagebox.showerror("Error", f"Invalid model parameters format: {e}")
-                return
-
-        self.log_train_results("Starting model training...")
-        self.log_train_results(f"Dataset: {train_dataset}")
-        self.log_train_results(f"Output model: {model_file}")
-        if model_params:
-            self.log_train_results(f"Parameters: {model_params}")
+        """Execute model training using circuit_detector API"""
 
         # Run training in a separate thread to avoid blocking the GUI
         def training_thread():
             try:
+                # Get and validate all training fields
+                train_dataset = self._safe_get_field(self.train_dataset_var, "training dataset directory")
+                model_file = self._safe_get_field(self.train_model_file_var, "output model file path")
+                model_params_str = self._safe_get_field(self.model_params_var, "model parameters", allow_empty=True)
+                model_params = self._safe_parse_model_params(model_params_str)
+
+                self.log_train_results("Starting model training...")
+                self.log_train_results(f"Dataset: {train_dataset}")
+                self.log_train_results(f"Output model: {model_file}")
+                if model_params:
+                    self.log_train_results(f"Parameters: {model_params}")
+
                 # Change to project root directory
                 original_cwd = os.getcwd()
                 os.chdir(self.project_root)
@@ -664,6 +703,10 @@ class DatasetGUI:
                 finally:
                     os.chdir(original_cwd)
 
+            except FieldValidationError as e:
+                messagebox.showerror("Error", str(e))
+                return
+
             except Exception as e:
                 error_msg = f"Unexpected error: {str(e)}"
                 self.log_train_results(error_msg)
@@ -674,25 +717,19 @@ class DatasetGUI:
         thread.start()
 
     def validate_model(self):
-        # Get parameters
-        val_dataset = self.val_dataset_var.get().strip()
-        model_file = self.val_model_file_var.get().strip()
-
-        if not val_dataset:
-            messagebox.showerror("Error", "Please specify validation dataset directory")
-            return
-
-        if not model_file:
-            messagebox.showerror("Error", "Please specify model file path")
-            return
-
-        self.log_train_results("Starting model validation...")
-        self.log_train_results(f"Model: {model_file}")
-        self.log_train_results(f"Validation dataset: {val_dataset}")
+        """Execute model validation using CircuitClassifier API"""
 
         # Run validation in a separate thread to avoid blocking the GUI
         def validation_thread():
             try:
+                # Get and validate all validation fields
+                val_dataset = self._safe_get_field(self.val_dataset_var, "validation dataset directory")
+                model_file = self._safe_get_field(self.val_model_file_var, "model file path")
+
+                self.log_train_results("Starting model validation...")
+                self.log_train_results(f"Model: {model_file}")
+                self.log_train_results(f"Validation dataset: {val_dataset}")
+
                 # Change to project root directory
                 original_cwd = os.getcwd()
                 os.chdir(self.project_root)
@@ -731,6 +768,10 @@ class DatasetGUI:
 
                 finally:
                     os.chdir(original_cwd)
+
+            except FieldValidationError as e:
+                messagebox.showerror("Error", str(e))
+                return
 
             except Exception as e:
                 error_msg = f"Unexpected error: {str(e)}"
@@ -781,24 +822,21 @@ class DatasetGUI:
         self.confidence_label.config(text=f"{self.confidence_var.get():.1f}%")
 
     def start_filtering(self):
-        model_file = self.filter_model_var.get().strip()
-        dataset_folder = self.filter_dataset_var.get().strip()
+        """Initialize filtering process"""
 
-        if not model_file:
-            messagebox.showerror("Error", "Please specify model file path")
-            return
-
-        if not dataset_folder:
-            messagebox.showerror("Error", "Please specify dataset folder path")
-            return
-
-        # Load the classifier
+        # Get and validate all filtering fields and load the classifier
         try:
+            model_file = self._safe_get_field(self.filter_model_var, "model file path")
+            dataset_folder = self._safe_get_field(self.filter_dataset_var, "dataset folder path")
+
             model_path = Path(model_file)
             if not model_path.is_absolute():
                 model_path = self.project_root / model_path
 
             self.current_classifier = circuit_detector.CircuitClassifier.load(model_path)
+        except FieldValidationError as e:
+            messagebox.showerror("Error", str(e))
+            return
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load model: {e}")
             return
