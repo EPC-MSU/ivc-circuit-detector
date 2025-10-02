@@ -1,14 +1,16 @@
-* Qucs 2.1.0 C:/dev/ivc-circuit-detector/circuit_classes/R_D/DC.sch
-.INCLUDE "C:/Program Files (x86)/Qucs-S/share/qucs-s/xspice_cmlib/include/ngspice_mathfunc.inc"
-* Qucs 2.1.0  C:/dev/ivc-circuit-detector/circuit_classes/R_D/DC.sch
-D_1N4148_1 input 0 DMOD_D_1N4148_1 AREA=1.0 Temp=26.85
-.MODEL DMOD_D_1N4148_1 D (Is=2.22e-10 N=1.65 Cj0=4e-12 M=0.333 Vj=0.7 Fc=0.5 Rs=0.0686 Tt=5.76e-09 Kf=0 Af=1 Bv=75 Ibv=1e-06 Xti=3 Eg=1.11 Tcv=0 Trs=0 Ttt1=0 Ttt2=0 Tm1=0 Tm2=0 Tnom=26.85 )
+* Qucs 25.2.0  C:/Users/volkov_pa/Desktop/workdir/ivc-circuit-detector/circuit_classes/DC/DC.sch
+.INCLUDE "C:/Program Files/Qucs-S/share/qucs-s/xspice_cmlib/include/ngspice_mathfunc.inc"
 C1 input 0  1N 
+D1 input 0 DMOD_D1 AREA=1.0
+.MODEL DMOD_D1 D (Is=1E-15 N=1 Cj0=0F M=0.5 Vj=0.7 Fc=0.5 Rs=0.0 Tt=0.0P Kf=0.0 Af=1.0 Bv=1000 Ibv=1M Xti=3.0 Eg=1.11 Tcv=0.0 Trs=0.0 Ttt1=0.0 Ttt2=0.0 Tm1=0.0 Tm2=0.0 Tnom=26.85 )
+
 .control
-set filetype=ascii
+
 op
-print all > spice4qucs.cir.dc_op
+print v(input)   > spice4qucs.dc1.ngspice.dc.print
 destroy all
-quit
+reset
+
+exit
 .endc
-.end
+.END

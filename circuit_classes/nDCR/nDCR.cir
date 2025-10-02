@@ -1,8 +1,8 @@
-* Qucs 25.2.0  C:/Users/volkov_pa/Desktop/workdir/ivc-circuit-detector/circuit_classes/DCR/DCR.sch
+* Qucs 25.2.0  C:/Users/volkov_pa/Desktop/workdir/ivc-circuit-detector/circuit_classes/nDCR/nDCR.sch
 .INCLUDE "C:/Program Files/Qucs-S/share/qucs-s/xspice_cmlib/include/ngspice_mathfunc.inc"
 C1 input 0  1N 
 R1 input 0  1K
-D1 input 0 DMOD_D1 AREA=1.0
+D1 0 input DMOD_D1 AREA=1.0
 .MODEL DMOD_D1 D (Is=1E-15 N=1 Cj0=0F M=0.5 Vj=0.7 Fc=0.5 Rs=0.0 Tt=0.0P Kf=0.0 Af=1.0 Bv=1000 Ibv=1M Xti=3.0 Eg=1.11 Tcv=0.0 Trs=0.0 Ttt1=0.0 Ttt2=0.0 Tm1=0.0 Tm2=0.0 Tnom=26.85 )
 
 .control
