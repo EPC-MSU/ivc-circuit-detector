@@ -1,0 +1,162 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "parameters_variations_schema.json",
+  "title": "Dataset Generation Parameters Settings",
+  "description": "Schema for validating parameters_variations.json file used for circuit parameter variation in dataset generation",
+  "type": "object",
+  "required": ["title", "description", "version", "filter", "elements"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the configuration file"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the configuration file purpose"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Version number in semantic versioning format (x.y.z)"
+    },
+    "filter": {
+      "type": "object",
+      "description": "Filtering and bounds configuration settings",
+      "required": ["bounds_extension_percentage", "min_difference_threshold"],
+      "properties": {
+        "bounds_extension_percentage": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 100.0,
+          "description": "Percentage to extend parameter bounds beyond min/max values for filtering (default: 10.0)"
+        },
+        "min_difference_threshold": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Minimum difference threshold between original and boundary I-V curves (0.0 to 1.0, default: 0.05)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "elements": {
+      "type": "object",
+      "description": "Circuit element types and their parameter variation settings",
+      "patternProperties": {
+        "^[A-Z]$": {
+          "type": "array",
+          "description": "Array of parameter definitions for element type (R, C, D, etc.)",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["_name", "_units", "cir_key", "cir_unit", "nominal"],
+            "properties": {
+              "_name": {
+                "type": "string",
+                "description": "Human-readable name of the parameter"
+              },
+              "_units": {
+                "type": "string",
+                "description": "Units for display purposes"
+              },
+              "cir_key": {
+                "type": ["string", "null"],
+                "description": "Circuit file parameter key (null for basic components like R, C, L)"
+              },
+              "cir_unit": {
+                "type": ["string", "null"],
+                "description": "Unit suffix for circuit file (e.g., 'K' for kOhm, 'N' for nF)"
+              },
+              "nominal": {
+                "type": "object",
+                "description": "Parameter variation specification",
+                "required": ["type"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["uniform_interval", "exponential_interval", "list"],
+                    "description": "Type of parameter variation"
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "type": {"const": "uniform_interval"}
+                      }
+                    },
+                    "then": {
+                      "required": ["interval", "interval_points"],
+                      "properties": {
+                        "interval": {
+                          "type": "array",
+                          "items": {"type": "number"},
+                          "minItems": 2,
+                          "maxItems": 2,
+                          "description": "Min and max values [min, max]"
+                        },
+                        "interval_points": {
+                          "type": "integer",
+                          "minimum": 2,
+                          "description": "Number of points to generate in the interval"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "type": {"const": "exponential_interval"}
+                      }
+                    },
+                    "then": {
+                      "required": ["interval", "interval_points"],
+                      "properties": {
+                        "interval": {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "minItems": 2,
+                          "maxItems": 2,
+                          "description": "Min and max values [min, max] (must be positive for exponential)"
+                        },
+                        "interval_points": {
+                          "type": "integer",
+                          "minimum": 2,
+                          "description": "Number of points to generate in the exponential interval"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "type": {"const": "list"}
+                      }
+                    },
+                    "then": {
+                      "required": ["value"],
+                      "properties": {
+                        "value": {
+                          "type": "array",
+                          "items": {"type": "number"},
+                          "minItems": 1,
+                          "uniqueItems": true,
+                          "description": "List of discrete values to use"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

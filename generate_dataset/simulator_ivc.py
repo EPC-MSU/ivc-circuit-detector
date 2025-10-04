@@ -9,6 +9,7 @@ from PySpice.Spice.Parser import Circuit
 class SimulatorIVC:
     def __init__(self, measurement_variant):
         self.measurement_settings = measurement_variant["measurement_settings"]
+        self.noise_settings = measurement_variant["noise_settings"]
 
     def get_ivc(self, circuit: Circuit):
         rms_voltage = self.measurement_settings["max_voltage"] / np.sqrt(2)
@@ -101,6 +102,51 @@ class SimulatorIVC:
         plt.savefig(path, dpi=100)
         plt.clf()
         plt.close("all")
+
+    def compare_ivc(self, ivc1, ivc2):
+        """
+        Compare two I-V curves and return a difference value from 0 to 1.
+        Uses EPCore's IVCComparator for accurate I-V curve comparison.
+
+        :param ivc1: First I-V curve (voltages, currents) tuple
+        :param ivc2: Second I-V curve (voltages, currents) tuple
+        :return: Difference value from 0 to 1 (0 means identical, 1 means completely different)
+        """
+        from epcore.measurementmanager import IVCComparator
+        from epcore.elements.measurement import IVCurve
+
+        # Extract voltages and currents from tuples
+        voltages1, currents1 = ivc1
+        voltages2, currents2 = ivc2
+
+        # Convert to lists if they're numpy arrays
+        if hasattr(voltages1, "tolist"):
+            voltages1 = voltages1.tolist()
+            currents1 = currents1.tolist()
+        if hasattr(voltages2, "tolist"):
+            voltages2 = voltages2.tolist()
+            currents2 = currents2.tolist()
+
+        # Create IVCurve objects
+        curve1 = IVCurve(currents=currents1, voltages=voltages1)
+        curve2 = IVCurve(currents=currents2, voltages=voltages2)
+
+        # Create comparator and configure it
+        comparator = IVCComparator()
+
+        # Get noise settings from measurement variant
+        # horizontal_noise = voltage noise, vertical_noise = current noise
+        noise_settings = getattr(self, "noise_settings", {})
+        min_var_voltage = noise_settings.get("horizontal_noise", 0.005)  # Default 5mV
+        min_var_current = noise_settings.get("vertical_noise", 5e-6)     # Default 5µA
+
+        comparator.set_min_ivc(min_var_voltage, min_var_current)
+
+        # Compare the curves
+        difference = comparator.compare_ivc(curve1, curve2)
+
+        # Ensure the result is in [0, 1] range
+        return max(0.0, min(1.0, difference))
 
     @staticmethod
     def add_noise(analysis, noise_settings):

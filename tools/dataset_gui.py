@@ -470,8 +470,6 @@ class DatasetGUI:
                 if nominal.get("type") == "list":
                     values = nominal.get("value", [])
                     value_str = ", ".join(map(str, values))
-                elif nominal.get("type") == "constant":
-                    value_str = str(nominal.get("value", ""))
                 else:
                     value_str = ""
 
@@ -501,20 +499,12 @@ class DatasetGUI:
 
                 # Parse comma-separated values
                 try:
-                    if "," in value_str:
-                        # List of values
-                        values = [float(v.strip()) for v in value_str.split(",") if v.strip()]
-                        elements[element_type][param_index]["nominal"] = {
-                            "type": "list",
-                            "value": values
-                        }
-                    else:
-                        # Single constant value
-                        value = float(value_str)
-                        elements[element_type][param_index]["nominal"] = {
-                            "type": "constant",
-                            "value": value
-                        }
+                    # Parse as list (single values become single-element lists)
+                    values = [float(v.strip()) for v in value_str.split(",") if v.strip()]
+                    elements[element_type][param_index]["nominal"] = {
+                        "type": "list",
+                        "value": values
+                    }
                 except ValueError as e:
                     messagebox.showerror(f"Error {e}",
                                          f"Invalid value for {element_type} parameter {param_index + 1}: {value_str}")
