@@ -58,12 +58,14 @@ def generate_dataset(save_png=False, dataset_dir=None):
 
                 # Check if original circuit differs enough from all bound circuits
                 should_save = True
+                min_difference_threshold = changer.min_difference_threshold
+
                 for bound_circuit in bound_circuits:
                     bound_ivc = simulator.get_ivc(bound_circuit)
                     difference = simulator.compare_ivc(original_ivc, bound_ivc)
 
-                    # If any bound circuit is too similar (difference <= 0.05 = 5%), skip this circuit
-                    if difference <= 0.05:
+                    # If any bound circuit is too similar (difference <= threshold), skip this circuit
+                    if difference <= min_difference_threshold:
                         should_save = False
                         break
 
@@ -84,4 +86,4 @@ def generate_dataset(save_png=False, dataset_dir=None):
                         simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
                         simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
                 else:
-                    print(f"Skipping circuit {i:03d} - too similar to boundary circuits")
+                    print(f"Skipping circuit {i:03d} - too similar to boundary circuits (threshold: {min_difference_threshold})")

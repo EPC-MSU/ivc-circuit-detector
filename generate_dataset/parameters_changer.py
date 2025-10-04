@@ -49,6 +49,11 @@ class ParametersChanger:
         self._settings = self._generate_intervals(self._filter_settings(self._params_settings))
         self._assist_settings = self._make_assist_settings()
 
+        # Extract filter settings with defaults
+        filter_settings = self._params_settings.get("filter", {})
+        self.bounds_extension_percentage = filter_settings.get("bounds_extension_percentage", 10.0)
+        self.min_difference_threshold = filter_settings.get("min_difference_threshold", 0.05)
+
     def generate_circuits(self) -> None:
         """
         Generate all possible parameters combinations according to settings in
@@ -63,15 +68,17 @@ class ParametersChanger:
             circuit = self._params_combination_to_circuit(params_combination)
             self.circuits.append(circuit)
 
-    def generate_bound_circuits(self, params_combination, percentage=10.0):
+    def generate_bound_circuits(self, params_combination, percentage=None):
         """
         Generate bound circuits for a given parameter combination.
         Returns a list of circuits with each parameter at its lower and upper bounds.
 
         :param params_combination: Original parameter combination
-        :param percentage: Percentage to extend bounds beyond min/max (default: 10%)
+        :param percentage: Percentage to extend bounds beyond min/max (None uses config value)
         :return: List of bound circuits
         """
+        if percentage is None:
+            percentage = self.bounds_extension_percentage
         bound_circuits = []
 
         # For each element in the parameter combination
@@ -98,15 +105,17 @@ class ParametersChanger:
 
         return bound_circuits
 
-    def _get_param_bounds(self, element_name, param_idx, percentage=10.0):
+    def _get_param_bounds(self, element_name, param_idx, percentage=None):
         """
         Get minimum and maximum bounds for a specific parameter with percentage extension.
 
         :param element_name: Name of the element (e.g., "R1", "D1")
         :param param_idx: Index of the parameter within the element
-        :param percentage: Percentage to extend bounds (default: 10%)
+        :param percentage: Percentage to extend bounds (None uses config value)
         :return: Tuple (lower_bound, upper_bound) where bounds are extended by percentage
         """
+        if percentage is None:
+            percentage = self.bounds_extension_percentage
         element_type = element_name[0]  # Extract element type (R, C, D, etc.)
         param_settings = self._params_settings["elements"][element_type][param_idx]
         nominal = param_settings["nominal"]
