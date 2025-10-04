@@ -68,42 +68,40 @@ class ParametersChanger:
             circuit = self._params_combination_to_circuit(params_combination)
             self.circuits.append(circuit)
 
-    def generate_bound_circuits(self, params_combination, percentage=None):
+    def generate_bound_circuits_with_params(self, params_combination, percentage=None):
         """
         Generate bound circuits for a given parameter combination.
-        Returns a list of circuits with each parameter at its lower and upper bounds.
+        Returns a list of tuples (circuit, params_combination) with each parameter at its lower and upper bounds.
 
         :param params_combination: Original parameter combination
         :param percentage: Percentage to extend bounds beyond min/max (None uses config value)
-        :return: List of bound circuits
+        :return: List of tuples (bound_circuit, bound_params_combination)
         """
         if percentage is None:
             percentage = self.bounds_extension_percentage
-        bound_circuits = []
+        bound_circuits_info = []
 
         # For each element in the parameter combination
         for element_name, element_params in params_combination.items():
             # For each parameter of this element
             for param_idx, param in enumerate(element_params):
-                param_key = param["cir_key"] if param["cir_key"] else "value"
-                original_value = param["value"]
-
                 # Get bounds with percentage extension
                 lower_bound, upper_bound = self._get_param_bounds(element_name, param_idx, percentage)
 
+                # Can't easily derive parameters from circuit object itself. Need to store and return them separately.
                 # Create lower bound circuit
                 lower_bound_combination = copy.deepcopy(params_combination)
                 lower_bound_combination[element_name][param_idx]["value"] = lower_bound
                 lower_circuit = self._params_combination_to_circuit(lower_bound_combination)
-                bound_circuits.append(lower_circuit)
+                bound_circuits_info.append((lower_circuit, lower_bound_combination))
 
                 # Create upper bound circuit
                 upper_bound_combination = copy.deepcopy(params_combination)
                 upper_bound_combination[element_name][param_idx]["value"] = upper_bound
                 upper_circuit = self._params_combination_to_circuit(upper_bound_combination)
-                bound_circuits.append(upper_circuit)
+                bound_circuits_info.append((upper_circuit, upper_bound_combination))
 
-        return bound_circuits
+        return bound_circuits_info
 
     def _get_param_bounds(self, element_name, param_idx, percentage=None):
         """

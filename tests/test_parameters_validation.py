@@ -26,7 +26,6 @@ class TestParametersValidation(unittest.TestCase):
         # Validate - jsonschema will handle all the validation logic
         jsonschema.validate(parameters, schema)
 
-
     def test_single_element_list_validation(self):
         """Test that single-element lists validate correctly."""
         # Create test data with single-element list

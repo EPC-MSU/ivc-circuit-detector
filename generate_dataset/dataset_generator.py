@@ -47,26 +47,40 @@ def generate_dataset(save_png=False, dataset_dir=None):
 
             params_combinations = changer._get_params_combinations(changer._settings)
 
+            # Format parameter details for the error message
+            def format_params(param_combination):
+                params_parts = []
+                for element_name, element_params in param_combination.items():
+                    for param in element_params:
+                        param_name = param.get("_name", param.get("cir_key", "value"))
+                        param_value = param["value"]
+                        param_unit = param.get("_units", param.get("cir_unit", ""))
+                        params_parts.append(f"{element_name}_{param_name}={param_value}{param_unit}")
+                return ", ".join(params_parts)
+
             for i, (circuit, params_combination) in enumerate(zip(changer.circuits, params_combinations)):
-                print(output_path, f"params{i:03d}")
+                print(f"Generating {output_path}_params{i:03d} with {format_params(params_combination)}")
 
                 # Get original I-V curve
                 original_ivc = simulator.get_ivc(circuit)
 
                 # Generate bound circuits for comparison
-                bound_circuits = changer.generate_bound_circuits(params_combination)
+                bound_circuits_info = changer.generate_bound_circuits_with_params(params_combination)
 
                 # Check if original circuit differs enough from all bound circuits
                 should_save = True
                 min_difference_threshold = changer.min_difference_threshold
 
-                for bound_circuit in bound_circuits:
+                for bound_circuit, bound_params_combination in bound_circuits_info:
                     bound_ivc = simulator.get_ivc(bound_circuit)
                     difference = simulator.compare_ivc(original_ivc, bound_ivc)
 
                     # If any bound circuit is too similar (difference <= threshold), skip this circuit
                     if difference <= min_difference_threshold:
                         should_save = False
+                        # Store info for detailed error message
+                        similarity_difference = difference
+                        similar_bound_params = bound_params_combination
                         break
 
                 # Only save files if circuit differs enough from all bounds
@@ -86,4 +100,5 @@ def generate_dataset(save_png=False, dataset_dir=None):
                         simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
                         simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
                 else:
-                    print(f"Skipping circuit {i:03d} - too similar to boundary circuits (threshold: {min_difference_threshold})")
+                    print(f"Too similar (difference: {similarity_difference:.4f} <= threshold: "
+                          f"{min_difference_threshold}) to boundary circuit {format_params(similar_bound_params)}")

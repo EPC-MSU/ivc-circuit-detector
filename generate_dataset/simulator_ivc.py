@@ -120,10 +120,10 @@ class SimulatorIVC:
         voltages2, currents2 = ivc2
 
         # Convert to lists if they're numpy arrays
-        if hasattr(voltages1, 'tolist'):
+        if hasattr(voltages1, "tolist"):
             voltages1 = voltages1.tolist()
             currents1 = currents1.tolist()
-        if hasattr(voltages2, 'tolist'):
+        if hasattr(voltages2, "tolist"):
             voltages2 = voltages2.tolist()
             currents2 = currents2.tolist()
 
@@ -136,7 +136,7 @@ class SimulatorIVC:
 
         # Get noise settings from measurement variant
         # horizontal_noise = voltage noise, vertical_noise = current noise
-        noise_settings = getattr(self, 'noise_settings', {})
+        noise_settings = getattr(self, "noise_settings", {})
         min_var_voltage = noise_settings.get("horizontal_noise", 0.005)  # Default 5mV
         min_var_current = noise_settings.get("vertical_noise", 5e-6)     # Default 5µA
 

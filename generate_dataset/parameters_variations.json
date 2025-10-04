@@ -3,8 +3,8 @@
   "description": "This file used for variate element parameters in .cir files. For example, resistance of R1 in some schema will be variate in interval from 1 to 100000000 with 10 point in exponential scale. This action produces 10 new .cir files with different resistance.",
   "version": "0.3.0",
   "filter": {
-    "bounds_extension_percentage": 20.0,
-    "min_difference_threshold": 0.02
+    "bounds_extension_percentage": 30.0,
+    "min_difference_threshold": 0.01
   },
   "elements": {
     "R": [
@@ -49,8 +49,8 @@
         "nominal": {
           "type": "list",
           "value": [
-            26.85,
-            300.0
+            400.0,
+            800.0
           ]
         }
       }
