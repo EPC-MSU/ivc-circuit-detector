@@ -9,6 +9,7 @@ from PySpice.Spice.Parser import Circuit
 class SimulatorIVC:
     def __init__(self, measurement_variant):
         self.measurement_settings = measurement_variant["measurement_settings"]
+        self.noise_settings = measurement_variant["noise_settings"]
 
     def get_ivc(self, circuit: Circuit):
         rms_voltage = self.measurement_settings["max_voltage"] / np.sqrt(2)
@@ -102,8 +103,7 @@ class SimulatorIVC:
         plt.clf()
         plt.close("all")
 
-    @staticmethod
-    def compare_ivc(ivc1, ivc2):
+    def compare_ivc(self, ivc1, ivc2):
         """
         Compare two I-V curves and return a difference value from 0 to 1.
         Uses EPCore's IVCComparator for accurate I-V curve comparison.
@@ -134,10 +134,12 @@ class SimulatorIVC:
         # Create comparator and configure it
         comparator = IVCComparator()
 
-        # Set minimum variance thresholds for normalization
-        # These values are based on typical measurement noise levels
-        min_var_voltage = 0.001  # 1mV minimum voltage variance
-        min_var_current = 1e-6   # 1µA minimum current variance
+        # Get noise settings from measurement variant
+        # horizontal_noise = voltage noise, vertical_noise = current noise
+        noise_settings = getattr(self, 'noise_settings', {})
+        min_var_voltage = noise_settings.get("horizontal_noise", 0.005)  # Default 5mV
+        min_var_current = noise_settings.get("vertical_noise", 5e-6)     # Default 5µA
+
         comparator.set_min_ivc(min_var_voltage, min_var_current)
 
         # Compare the curves
