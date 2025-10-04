@@ -63,6 +63,69 @@ class ParametersChanger:
             circuit = self._params_combination_to_circuit(params_combination)
             self.circuits.append(circuit)
 
+    def generate_bound_circuits(self, params_combination, percentage=10.0):
+        """
+        Generate bound circuits for a given parameter combination.
+        Returns a list of circuits with each parameter at its lower and upper bounds.
+
+        :param params_combination: Original parameter combination
+        :param percentage: Percentage to extend bounds beyond min/max (default: 10%)
+        :return: List of bound circuits
+        """
+        bound_circuits = []
+
+        # For each element in the parameter combination
+        for element_name, element_params in params_combination.items():
+            # For each parameter of this element
+            for param_idx, param in enumerate(element_params):
+                param_key = param["cir_key"] if param["cir_key"] else "value"
+                original_value = param["value"]
+
+                # Get bounds with percentage extension
+                lower_bound, upper_bound = self._get_param_bounds(element_name, param_idx, percentage)
+
+                # Create lower bound circuit
+                lower_bound_combination = copy.deepcopy(params_combination)
+                lower_bound_combination[element_name][param_idx]["value"] = lower_bound
+                lower_circuit = self._params_combination_to_circuit(lower_bound_combination)
+                bound_circuits.append(lower_circuit)
+
+                # Create upper bound circuit
+                upper_bound_combination = copy.deepcopy(params_combination)
+                upper_bound_combination[element_name][param_idx]["value"] = upper_bound
+                upper_circuit = self._params_combination_to_circuit(upper_bound_combination)
+                bound_circuits.append(upper_circuit)
+
+        return bound_circuits
+
+    def _get_param_bounds(self, element_name, param_idx, percentage=10.0):
+        """
+        Get minimum and maximum bounds for a specific parameter with percentage extension.
+
+        :param element_name: Name of the element (e.g., "R1", "D1")
+        :param param_idx: Index of the parameter within the element
+        :param percentage: Percentage to extend bounds (default: 10%)
+        :return: Tuple (lower_bound, upper_bound) where bounds are extended by percentage
+        """
+        element_type = element_name[0]  # Extract element type (R, C, D, etc.)
+        param_settings = self._params_settings["elements"][element_type][param_idx]
+        nominal = param_settings["nominal"]
+
+        if nominal["type"] in ["uniform_interval", "exponential_interval"]:
+            min_val, max_val = nominal["interval"][0], nominal["interval"][1]
+        elif nominal["type"] == "list":
+            values = nominal["value"]
+            min_val, max_val = min(values), max(values)
+        else:
+            raise UnknownIntervalType(f"Interval {nominal['type']} unknown")
+
+        # Calculate bounds with percentage extension
+        percentage_factor = percentage / 100.0
+        lower_bound = min_val * (1 - percentage_factor)
+        upper_bound = max_val * (1 + percentage_factor)
+
+        return lower_bound, upper_bound
+
     def dump_circuits_on_disk(self, base_folder) -> None:
         """
         Method dumps `self.circuits` to disk as .cir-files
@@ -154,9 +217,7 @@ class ParametersChanger:
     @staticmethod
     def _description_to_interval_points(nominal):
         # Make from interval description interval with points itself
-        if nominal["type"] == "constant":
-            return [nominal["value"]]
-        elif nominal["type"] == "uniform_interval":
+        if nominal["type"] == "uniform_interval":
             return list(np.linspace(nominal["interval"][0],
                                     nominal["interval"][1],
                                     nominal["interval_points"],

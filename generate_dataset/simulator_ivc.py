@@ -103,6 +103,19 @@ class SimulatorIVC:
         plt.close("all")
 
     @staticmethod
+    def compare_ivc(ivc1, ivc2):
+        """
+        Compare two I-V curves and return a difference value from 0 to 1.
+        Currently a dummy function that always returns 1.
+
+        :param ivc1: First I-V curve (voltages, currents) tuple
+        :param ivc2: Second I-V curve (voltages, currents) tuple
+        :return: Difference value from 0 to 1 (1 means completely different)
+        """
+        # Dummy implementation - always return 1 (completely different)
+        return 1.0
+
+    @staticmethod
     def add_noise(analysis, noise_settings):
         # We calculate noise independently for current and voltage based on RMS values and the same SNR
         voltages, currents = analysis

@@ -45,19 +45,43 @@ def generate_dataset(save_png=False, dataset_dir=None):
 
             simulator = SimulatorIVC(measurement_variant)
 
-            for i, circuit in enumerate(changer.circuits):
+            params_combinations = changer._get_params_combinations(changer._settings)
+
+            for i, (circuit, params_combination) in enumerate(zip(changer.circuits, params_combinations)):
                 print(output_path, f"params{i:03d}")
-                analysis = simulator.get_ivc(circuit)
-                if measurement_variant["noise_settings"]["without_noise"]:
-                    uzf_name = os.path.join(output_path, f"{cls}_params{i:03d}_noise_no.uzf")
-                    png_name = os.path.join(output_path, f"{cls}_params{i:03d}_noise_no.png")
-                    simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
-                    simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
 
-                for noise_number in range(measurement_variant["noise_settings"]["with_noise_copies"]):
-                    analysis = simulator.add_noise(analysis, measurement_variant["noise_settings"])
+                # Get original I-V curve
+                original_ivc = simulator.get_ivc(circuit)
 
-                    uzf_name = os.path.join(output_path, f"{cls}_params{i:03d}_noise{noise_number+1:03d}.uzf")
-                    png_name = os.path.join(output_path, f"{cls}_params{i:03d}_noise{noise_number+1:03d}.png")
-                    simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
-                    simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
+                # Generate bound circuits for comparison
+                bound_circuits = changer.generate_bound_circuits(params_combination)
+
+                # Check if original circuit differs enough from all bound circuits
+                should_save = True
+                for bound_circuit in bound_circuits:
+                    bound_ivc = simulator.get_ivc(bound_circuit)
+                    difference = simulator.compare_ivc(original_ivc, bound_ivc)
+
+                    # If any bound circuit is too similar (difference <= 0.05 = 5%), skip this circuit
+                    if difference <= 0.05:
+                        should_save = False
+                        break
+
+                # Only save files if circuit differs enough from all bounds
+                if should_save:
+                    analysis = original_ivc
+                    if measurement_variant["noise_settings"]["without_noise"]:
+                        uzf_name = os.path.join(output_path, f"{cls}_params{i:03d}_noise_no.uzf")
+                        png_name = os.path.join(output_path, f"{cls}_params{i:03d}_noise_no.png")
+                        simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
+                        simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
+
+                    for noise_number in range(measurement_variant["noise_settings"]["with_noise_copies"]):
+                        analysis = simulator.add_noise(analysis, measurement_variant["noise_settings"])
+
+                        uzf_name = os.path.join(output_path, f"{cls}_params{i:03d}_noise{noise_number+1:03d}.uzf")
+                        png_name = os.path.join(output_path, f"{cls}_params{i:03d}_noise{noise_number+1:03d}.png")
+                        simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
+                        simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
+                else:
+                    print(f"Skipping circuit {i:03d} - too similar to boundary circuits")
