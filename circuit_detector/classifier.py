@@ -422,11 +422,11 @@ class CircuitClassifier:
 
 def tune_classes(class_weights: Dict[str, float]) -> Dict[str, float]:
     for class_name in class_weights.keys():
-        if class_name == "R":
+        if class_name in ["C", "R", "D", "nD"]:
             class_weights[class_name] *= 2
-        elif class_name in ["DC", "D_C", "RC", "R_C", "R_D", "DR"]:
+        elif class_name in ["DC", "RC", "R_C", "R_D", "DR", "nDR", "R_nD", "nDC"]:
             class_weights[class_name] *= 1.5
-        elif class_name in ["DCR", "DD_R"]:
+        elif class_name in ["DCR", "DD_R", "nDCR"]:
             class_weights[class_name] *= 1
         elif class_name in ["DC(D_R)"]:
             class_weights[class_name] *= 0.75
