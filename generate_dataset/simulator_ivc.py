@@ -106,14 +106,45 @@ class SimulatorIVC:
     def compare_ivc(ivc1, ivc2):
         """
         Compare two I-V curves and return a difference value from 0 to 1.
-        Currently a dummy function that always returns 1.
+        Uses EPCore's IVCComparator for accurate I-V curve comparison.
 
         :param ivc1: First I-V curve (voltages, currents) tuple
         :param ivc2: Second I-V curve (voltages, currents) tuple
-        :return: Difference value from 0 to 1 (1 means completely different)
+        :return: Difference value from 0 to 1 (0 means identical, 1 means completely different)
         """
-        # Dummy implementation - always return 1 (completely different)
-        return 1.0
+        from epcore.measurementmanager import IVCComparator
+        from epcore.elements.measurement import IVCurve
+
+        # Extract voltages and currents from tuples
+        voltages1, currents1 = ivc1
+        voltages2, currents2 = ivc2
+
+        # Convert to lists if they're numpy arrays
+        if hasattr(voltages1, 'tolist'):
+            voltages1 = voltages1.tolist()
+            currents1 = currents1.tolist()
+        if hasattr(voltages2, 'tolist'):
+            voltages2 = voltages2.tolist()
+            currents2 = currents2.tolist()
+
+        # Create IVCurve objects
+        curve1 = IVCurve(currents=currents1, voltages=voltages1)
+        curve2 = IVCurve(currents=currents2, voltages=voltages2)
+
+        # Create comparator and configure it
+        comparator = IVCComparator()
+
+        # Set minimum variance thresholds for normalization
+        # These values are based on typical measurement noise levels
+        min_var_voltage = 0.001  # 1mV minimum voltage variance
+        min_var_current = 1e-6   # 1µA minimum current variance
+        comparator.set_min_ivc(min_var_voltage, min_var_current)
+
+        # Compare the curves
+        difference = comparator.compare_ivc(curve1, curve2)
+
+        # Ensure the result is in [0, 1] range
+        return max(0.0, min(1.0, difference))
 
     @staticmethod
     def add_noise(analysis, noise_settings):
