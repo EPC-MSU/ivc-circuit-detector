@@ -76,7 +76,7 @@ class SimulatorIVC:
         internal_resistance = self.measurement_settings["internal_resistance"]
 
         # X-axis: 20% wider than [-max_voltage, max_voltage]
-        x_range = max_voltage * 1.2
+        #x_range = max_voltage * 1.2
         #ax.set_xlim(-x_range, x_range)
 
         # Y-axis: max_voltage / internal_resistance * 1.2, centered at 0
