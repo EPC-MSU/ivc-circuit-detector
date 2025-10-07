@@ -81,7 +81,7 @@ class SimulatorIVC:
 
         # Y-axis: max_voltage / internal_resistance * 1.2, centered at 0
         y_max = (max_voltage / internal_resistance) * 1.2
-        #ax.set_ylim(-y_max, y_max)
+        ax.set_ylim(-y_max, y_max)
 
         arr_img = plt.imread(scheme_png_path)
         im = OffsetImage(arr_img, zoom=.5)
