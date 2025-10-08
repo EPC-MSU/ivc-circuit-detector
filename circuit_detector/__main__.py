@@ -210,7 +210,8 @@ if __name__ == "__main__":
     params_parser.add_argument("--uzf-file", required=True,
                                help="Path to UZF file for parameter detection")
     params_parser.add_argument("--model", default="model/model.pkl",
-                               help="Path to trained model file (used if UZF has no class name, default: model/model.pkl)")
+                               help="Path to trained model file "
+                                    "(used if UZF has no class name, default: model/model.pkl)")
     params_parser.set_defaults(func=detect_params_command)
 
     arguments = parser.parse_args()
