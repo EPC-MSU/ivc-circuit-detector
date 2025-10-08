@@ -12,13 +12,13 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--image", action="store_true", help="Add IVC-png-image to each dataset file")
     parser.add_argument("--dataset-dir", default="dataset",
                         help="Output directory for generated dataset (default: dataset)")
+    parser.add_argument("--disable-filtering", action="store_true",
+                        help="Disable boundary condition filtering")
     args = parser.parse_args()
 
     validate_circuit_classes()
     validate_measurement_settings()
-    if args.image:
-        logging.info(f"Generating dataset with images to {args.dataset_dir}...")
-        generate_dataset(save_png=True, dataset_dir=args.dataset_dir)
-    else:
-        logging.info(f"Generating dataset to {args.dataset_dir}...")
-        generate_dataset(save_png=False, dataset_dir=args.dataset_dir)
+
+    filter_status = "disabled" if args.disable_filtering else "enabled"
+    logging.info(f"Generating dataset to {args.dataset_dir} with filtering {filter_status}...")
+    generate_dataset(save_png=args.image, dataset_dir=args.dataset_dir, disable_filtering=args.disable_filtering)

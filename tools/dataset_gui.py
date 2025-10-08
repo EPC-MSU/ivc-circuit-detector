@@ -178,6 +178,15 @@ class DatasetGUI:
         )
         image_checkbox.pack(anchor="w", padx=5, pady=5)
 
+        # Disable filtering checkbox
+        self.disable_filtering_var = tk.BooleanVar(value=False)
+        disable_filtering_checkbox = ttk.Checkbutton(
+            settings_frame,
+            text="Disable boundary condition filtering",
+            variable=self.disable_filtering_var
+        )
+        disable_filtering_checkbox.pack(anchor="w", padx=5, pady=5)
+
         # Buttons
         button_frame = ttk.Frame(self.dataset_frame)
         button_frame.pack(fill="x", padx=5, pady=10)
@@ -545,6 +554,10 @@ class DatasetGUI:
             # Add image flag if enabled
             if self.image_var.get():
                 cmd.append("--image")
+
+            # Add disable-filtering flag if enabled
+            if self.disable_filtering_var.get():
+                cmd.append("--disable-filtering")
 
             self.log_status("Starting dataset generation...")
             self.log_status(f"Command: {' '.join(cmd)}")

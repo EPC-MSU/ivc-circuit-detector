@@ -11,13 +11,14 @@ MEASUREMENTS_SETTINGS_PATH = "generate_dataset\\measurement_settings.json"
 DEFAULT_DATASET_FOLDER = "dataset"
 
 
-def generate_dataset(save_png=False, dataset_dir=None):
+def generate_dataset(save_png=False, dataset_dir=None, disable_filtering=False):
     """
     Generate dataset from circuit classes.
 
     Args:
         save_png: Whether to save PNG images for each dataset file
         dataset_dir: Output directory for dataset (default: "dataset")
+        disable_filtering: If True, skip boundary condition filtering (default: False)
     """
     if dataset_dir is None:
         dataset_dir = DEFAULT_DATASET_FOLDER
@@ -64,26 +65,27 @@ def generate_dataset(save_png=False, dataset_dir=None):
                 # Get original I-V curve
                 original_ivc = simulator.get_ivc(circuit)
 
-                # Generate bound circuits for comparison
-                bound_circuits_info = changer.generate_bound_circuits_with_params(params_combination)
-
                 # Check if original circuit differs enough from all bound circuits
                 should_save = True
-                min_difference_threshold = changer.min_difference_threshold
 
-                for bound_circuit, bound_params_combination in bound_circuits_info:
-                    bound_ivc = simulator.get_ivc(bound_circuit)
-                    difference = simulator.compare_ivc(original_ivc, bound_ivc)
+                if not disable_filtering:
+                    # Generate bound circuits for comparison
+                    bound_circuits_info = changer.generate_bound_circuits_with_params(params_combination)
+                    min_difference_threshold = changer.min_difference_threshold
 
-                    # If any bound circuit is too similar (difference <= threshold), skip this circuit
-                    if difference <= min_difference_threshold:
-                        should_save = False
-                        # Store info for detailed error message
-                        similarity_difference = difference
-                        similar_bound_params = bound_params_combination
-                        break
+                    for bound_circuit, bound_params_combination in bound_circuits_info:
+                        bound_ivc = simulator.get_ivc(bound_circuit)
+                        difference = simulator.compare_ivc(original_ivc, bound_ivc)
 
-                # Only save files if circuit differs enough from all bounds
+                        # If any bound circuit is too similar (difference <= threshold), skip this circuit
+                        if difference <= min_difference_threshold:
+                            should_save = False
+                            # Store info for detailed error message
+                            similarity_difference = difference
+                            similar_bound_params = bound_params_combination
+                            break
+
+                # Only save files if circuit differs enough from all bounds (or filtering is disabled)
                 if should_save:
                     analysis = original_ivc
                     if measurement_variant["noise_settings"]["without_noise"]:
@@ -100,5 +102,6 @@ def generate_dataset(save_png=False, dataset_dir=None):
                         simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
                         simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
                 else:
-                    print(f"Too similar (difference: {similarity_difference:.4f} <= threshold: "
-                          f"{min_difference_threshold}) to boundary circuit {format_params(similar_bound_params)}")
+                    if not disable_filtering:
+                        print(f"Too similar (difference: {similarity_difference:.4f} <= threshold: "
+                              f"{min_difference_threshold}) to boundary circuit {format_params(similar_bound_params)}")
