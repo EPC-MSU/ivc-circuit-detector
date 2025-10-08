@@ -145,7 +145,7 @@ def _detect_simple_rc_parameters(circuit_features: CircuitFeatures) -> Dict[str,
 
     if class_name == "R":
         # Pure resistor: Z = R
-        result["R"] = float(np.abs(z_real))
+        result["R"] = float(z_real)
 
     elif class_name == "C":
         # Pure capacitor: Z = 1/(jωC), so C = 1/(ω*|Z_imag|)
@@ -153,7 +153,7 @@ def _detect_simple_rc_parameters(circuit_features: CircuitFeatures) -> Dict[str,
             raise ValueError("Imaginary impedance is too small to calculate capacitance")
         # For capacitor, impedance is negative imaginary: -j/(ωC)
         capacitance = -1.0 / (omega * z_imag)
-        result["C"] = float(np.abs(capacitance))
+        result["C"] = float(capacitance)
 
     elif class_name == "RC":
         # Parallel R||C circuit: Z = R/(1 + jωRC)
@@ -178,7 +178,7 @@ def _detect_simple_rc_parameters(circuit_features: CircuitFeatures) -> Dict[str,
             raise ValueError("Calculated resistance is too small")
         capacitance = rc_product / resistance
 
-        result["R"] = float(np.abs(resistance))
-        result["C"] = float(np.abs(capacitance))
+        result["R"] = float(resistance)
+        result["C"] = float(capacitance)
 
     return result
