@@ -152,6 +152,8 @@ class ParametersChanger:
             if el_params[0]["cir_key"] is not None:
                 # Has DeviceModel(s) (D, transistors etc)
                 for dev_model in list(circuit.models):
+                    if el_name not in dev_model.name:
+                        continue
                     new_params = {}
                     for key in dev_model.parameters:
                         if key not in [el_param["cir_key"] for el_param in el_params]:
