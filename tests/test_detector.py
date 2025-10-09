@@ -14,7 +14,7 @@ class TestFeatureExtraction(unittest.TestCase):
     def setUp(self):
         """Set up test data paths."""
         self.test_data_dir = Path(__file__).parent / "data"
-        self.test_uzf_path = self.test_data_dir / "test.uzf"
+        self.test_uzf_path = self.test_data_dir / "RC_R10K_C3N_F1000_IR4750_V5.uzf"
 
     def test_extract_features_from_uzf_success(self):
         """Test successful feature extraction from UZF file."""
