@@ -4,7 +4,6 @@ Dataset Filtering Tab for the GUI tool.
 
 import tkinter as tk
 from tkinter import ttk, messagebox
-from pathlib import Path
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure

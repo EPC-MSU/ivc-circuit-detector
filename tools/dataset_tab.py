@@ -8,7 +8,6 @@ import json
 import os
 import threading
 import traceback
-from pathlib import Path
 import io
 from contextlib import redirect_stdout
 

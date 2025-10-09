@@ -7,7 +7,6 @@ from tkinter import ttk, messagebox
 import os
 import threading
 import traceback
-from pathlib import Path
 
 from tools.base_tab import BaseTab
 from tools.gui_utils import safe_get_field, safe_parse_model_params, FieldValidationError, resolve_path

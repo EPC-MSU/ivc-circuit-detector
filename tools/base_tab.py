@@ -3,7 +3,6 @@ Base class for GUI tabs in the dataset tool.
 """
 
 from tkinter import ttk, filedialog
-from pathlib import Path
 from tools.gui_utils import get_relative_path
 
 

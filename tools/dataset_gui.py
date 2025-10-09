@@ -10,16 +10,17 @@ import os
 import sys
 from pathlib import Path
 
-# Set up import paths
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(parent_dir)
-
 # Import circuit_detector and generate_dataset modules
 import circuit_detector
 from generate_dataset import dataset_generator as generate_dataset_module
 
 # Import tab modules and set their module references
 from tools import dataset_tab, train_tab, filter_tab, uzf_testing_tab
+
+
+# Set up import paths
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(parent_dir)
 
 dataset_tab.set_generate_dataset_module(generate_dataset_module)
 train_tab.set_circuit_detector_module(circuit_detector)

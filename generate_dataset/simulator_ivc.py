@@ -7,7 +7,8 @@ from PySpice.Spice.Parser import Circuit
 import matplotlib
 
 
-matplotlib.use('agg')
+# The matplotlib backend that can be used with threading
+matplotlib.use("agg")
 
 
 class SimulatorIVC:
