@@ -436,7 +436,8 @@ def tune_classes(class_weights: Dict[str, float]) -> Dict[str, float]:
 
 
 def train_classifier(dataset_dir: Union[str, Path],
-                     model_params: Optional[Dict[str, Any]] = None) -> CircuitClassifier:
+                     model_params: Optional[Dict[str, Any]] = None,
+                     return_training_data: bool = False) -> Union[CircuitClassifier, Tuple[CircuitClassifier, np.ndarray, np.ndarray, List[str]]]:
     """
     Train a machine learning model on the dataset.
 
@@ -446,9 +447,11 @@ def train_classifier(dataset_dir: Union[str, Path],
     Args:
         dataset_dir: Path to dataset directory with subdirectories for each circuit class
         model_params: Optional parameters for the machine learning model
+        return_training_data: If True, return training data along with classifier
 
     Returns:
-        Trained CircuitClassifier instance
+        If return_training_data is False: Trained CircuitClassifier instance
+        If return_training_data is True: Tuple of (classifier, X, y, feature_names)
 
     Raises:
         FileNotFoundError: If dataset directory doesn't exist
@@ -528,7 +531,12 @@ def train_classifier(dataset_dir: Union[str, Path],
     print("Training completed successfully!")
     print(f"Model trained on {len(x)} samples with {len(unique_classes)} classes")
 
-    return classifier
+    if return_training_data:
+        # Get feature names from the first feature object
+        feature_names = all_features[0].feature_names if all_features else []
+        return classifier, x, y, feature_names
+    else:
+        return classifier
 
 
 def predict_circuit_class(uzf_path: Union[str, Path],

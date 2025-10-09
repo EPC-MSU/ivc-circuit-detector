@@ -212,7 +212,11 @@ class TrainTab(BaseTab):
                     dataset_path = resolve_path(train_dataset, self.project_root)
 
                     self.log("Training classifier...")
-                    classifier = circuit_detector.train_classifier(dataset_path, model_params if model_params else None)
+                    classifier, X, y, feature_names = circuit_detector.train_classifier(
+                        dataset_path,
+                        model_params if model_params else None,
+                        return_training_data=True
+                    )
 
                     # Save the model
                     model_path = resolve_path(model_file, self.project_root)
@@ -224,29 +228,24 @@ class TrainTab(BaseTab):
                     self.log(f"Model classes: {classifier.classes_}")
                     self.log(f"Number of classes: {classifier.n_classes}")
 
-                    # Display feature importances
-                    if hasattr(classifier.model, "feature_importances_"):
-                        self.log("\nFeature Importances:")
-                        feature_importances = classifier.model.feature_importances_
+                    # Calculate permutation importance
+                    self.log("\nCalculating feature importances (permutation)...")
+                    from sklearn.inspection import permutation_importance
+                    perm_importance = permutation_importance(
+                        classifier.model, X, y,
+                        n_repeats=10,
+                        random_state=42,
+                        n_jobs=-1
+                    )
 
-                        # Get feature names by extracting from a sample UZF file
-                        feature_names = None
-                        try:
-                            import glob
-                            uzf_files = glob.glob(str(dataset_path / "**/*.uzf"), recursive=True)
-                            if uzf_files:
-                                sample_features = circuit_detector.extract_features_from_uzf(uzf_files[0])
-                                feature_names = sample_features.feature_names
-                        except Exception as e:
-                            self.log(f"Warning: Could not extract feature names: {e}")
-
-                        # Sort features by importance in descending order
-                        sorted_indices = feature_importances.argsort()[::-1]
-                        for idx in sorted_indices:
-                            if feature_names and idx < len(feature_names):
-                                self.log(f"  {feature_names[idx]}: {feature_importances[idx]:.6f}")
-                            else:
-                                self.log(f"  Feature {idx}: {feature_importances[idx]:.6f}")
+                    self.log("\nFeature Importances (Permutation):")
+                    # Sort features by importance in descending order
+                    sorted_indices = perm_importance.importances_mean.argsort()[::-1]
+                    for idx in sorted_indices:
+                        if feature_names and idx < len(feature_names):
+                            self.log(f"  {feature_names[idx]}: {perm_importance.importances_mean[idx]:.6f} +/- {perm_importance.importances_std[idx]:.6f}")
+                        else:
+                            self.log(f"  Feature {idx}: {perm_importance.importances_mean[idx]:.6f} +/- {perm_importance.importances_std[idx]:.6f}")
 
                     # Show success message in main thread
                     self.root.after(0, lambda: messagebox.showinfo("Success", "Model training completed successfully!"))
