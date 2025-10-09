@@ -103,7 +103,7 @@ def _save_circuit_files(circuit, original_ivc, simulator, measurement_variant, o
         simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
 
 
-def _process_single_circuit(circuit, index, cls, changer, simulator,
+def _process_single_circuit(circuit, params_combination, index, cls, changer, simulator,
                             measurement_variant, output_path, scheme_png_path,
                             save_png, disable_filtering):
     """
@@ -111,6 +111,7 @@ def _process_single_circuit(circuit, index, cls, changer, simulator,
 
     Args:
         circuit: Circuit object
+        params_combination: Parameter combination for this circuit
         index: Circuit index
         cls: Circuit class name
         changer: ParametersChanger instance
@@ -121,8 +122,6 @@ def _process_single_circuit(circuit, index, cls, changer, simulator,
         save_png: Whether to save PNG plots
         disable_filtering: If True, skip boundary condition filtering
     """
-    params_combination = changer._get_params_combinations(changer._settings)
-
     print(f"Generating {output_path}_params{index:03d} with {_format_params(params_combination)}")
 
     # Make actual simulation to get I-V curve
@@ -187,7 +186,10 @@ def generate_dataset(save_png=False, dataset_dir=None, disable_filtering=False):
             # Create a simulator for the measurement settings
             simulator = SimulatorIVC(measurement_variant)
 
-            for i, circuit in enumerate(changer.circuits):
-                _process_single_circuit(circuit, i, cls, changer, simulator,
+            # Get parameter combinations for all circuits
+            params_combinations = changer._get_params_combinations(changer._settings)
+
+            for i, (circuit, params_combination) in enumerate(zip(changer.circuits, params_combinations)):
+                _process_single_circuit(circuit, params_combination, i, cls, changer, simulator,
                                         measurement_variant, output_path, scheme_png_path,
                                         save_png, disable_filtering)
