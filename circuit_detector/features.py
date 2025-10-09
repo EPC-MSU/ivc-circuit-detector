@@ -100,19 +100,37 @@ class CircuitFeatures:
 
         # Statistical features from voltages
         features["voltage_mean [V]"] = np.mean(self.voltages)
-        features["voltage_std [V]"] = np.std(self.voltages)
         features["voltage_min [V]"] = np.min(self.voltages)
         features["voltage_max [V]"] = np.max(self.voltages)
         features["voltage_median [v]"] = np.median(self.voltages)
-        features["voltage_range [V]"] = np.max(self.voltages) - np.min(self.voltages)
 
         # Statistical features from currents
         features["current_mean [A]"] = np.mean(self.currents)
-        features["current_std [A]"] = np.std(self.currents)
         features["current_min [A]"] = np.min(self.currents)
         features["current_max [A]"] = np.max(self.currents)
         features["current_median [A]"] = np.median(self.currents)
-        features["current_range [A]"] = np.max(self.currents) - np.min(self.currents)
+
+        # Resistance curve features (voltage / current)
+        # Avoid division by zero by using a small epsilon
+        epsilon = 1e-10
+        resistances = self.voltages / (self.currents + epsilon)
+
+        # Normalize resistance curve
+        norm_resistances = resistances / self.measurement_settings.internal_resistance
+
+        # FFT features for resistance curve
+        norm_resistance_fft = np.fft.fft(norm_resistances)
+        for i in range(1, 4):  # Skip DC component (index 0), take frequencies 1, 2, 3
+            resistance_amplitude = np.abs(norm_resistance_fft[i])
+            resistance_phase = np.angle(norm_resistance_fft[i])
+            features[f"resistance_fft_freq{i}_amplitude"] = resistance_amplitude
+            features[f"resistance_fft_freq{i}_phase [rad]"] = resistance_phase
+
+        # Statistical features for resistance
+        features["resistance_mean [Ohm]"] = np.mean(resistances)
+        features["resistance_min [Ohm]"] = np.min(resistances)
+        features["resistance_max [Ohm]"] = np.max(resistances)
+        features["resistance_median [Ohm]"] = np.median(resistances)
 
         return features
 
