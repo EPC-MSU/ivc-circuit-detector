@@ -9,6 +9,7 @@ from circuit_detector.classifier import (
     predict_circuit_class,
     CircuitClassifier
 )
+from circuit_detector.regression import detect_parameters
 
 logging.basicConfig(format="%(asctime)s %(message)s", datefmt="[%Y-%m-%d %H:%M:%S]", level=logging.INFO)
 
@@ -120,6 +121,50 @@ def extract_features_command(args):
     features.print_features(verbose=args.verbose)
 
 
+def detect_params_command(args):
+    """Detect circuit element parameters from UZF file."""
+    uzf_path = Path(args.uzf_file)
+
+    if not uzf_path.exists():
+        logging.error(f"UZF file not found: {uzf_path}")
+        sys.exit(1)
+
+    logging.info(f"Extracting features from: {uzf_path}")
+    features = extract_features_from_uzf(uzf_path)
+
+    # If class_name is empty, use classifier to predict it
+    if not features.class_name:
+        model_path = Path(args.model)
+        if not model_path.exists():
+            logging.error(f"Model file not found: {model_path}")
+            logging.error("UZF file has no class name and model is required for prediction")
+            sys.exit(1)
+
+        logging.info(f"Loading model from: {model_path}")
+        classifier = CircuitClassifier.load(model_path)
+
+        logging.info(f"Predicting circuit class for: {uzf_path}")
+        result = predict_circuit_class(uzf_path, classifier)
+        features = result["features"]
+
+        print(f"Detected Circuit Class: {features.class_name} (confidence: {result['confidence']:.3f})")
+    else:
+        print(f"Circuit Class from UZF: {features.class_name}")
+
+    logging.info(f"Detecting parameters for circuit class: {features.class_name}")
+
+    try:
+        parameters = detect_parameters(features)
+
+        print("Detected Parameters:")
+        for element_name, value in parameters.items():
+            print(f"  {element_name}: {value}")
+
+    except (ValueError, NotImplementedError) as e:
+        logging.error(f"Parameter detection failed: {e}")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Circuit Detector CLI for training and inference")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -159,6 +204,15 @@ if __name__ == "__main__":
     features_parser.add_argument("-v", "--verbose", action="store_true",
                                  help="Show detailed feature values")
     features_parser.set_defaults(func=extract_features_command)
+
+    # Detect parameters command
+    params_parser = subparsers.add_parser("detect-params", help="Detect circuit element parameters from UZF file")
+    params_parser.add_argument("--uzf-file", required=True,
+                               help="Path to UZF file for parameter detection")
+    params_parser.add_argument("--model", default="model/model.pkl",
+                               help="Path to trained model file "
+                                    "(used if UZF has no class name, default: model/model.pkl)")
+    params_parser.set_defaults(func=detect_params_command)
 
     arguments = parser.parse_args()
 
