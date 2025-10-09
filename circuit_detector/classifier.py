@@ -424,11 +424,11 @@ def tune_classes(class_weights: Dict[str, float]) -> Dict[str, float]:
     for class_name in class_weights.keys():
         if class_name in ["C", "R", "D", "nD"]:
             class_weights[class_name] *= 2
-        elif class_name in ["DC", "RC", "R_C", "R_D", "DR", "nDR", "R_nD", "nDC"]:
+        elif class_name in ["DC", "RC", "R_D", "DR", "nDR", "R_nD", "nDC"]:
             class_weights[class_name] *= 1.5
-        elif class_name in ["DCR", "DD_R", "nDCR"]:
+        elif class_name in ["DCR", "DnD_R", "nDCR"]:
             class_weights[class_name] *= 1
-        elif class_name in ["DC(D_R)"]:
+        elif class_name in ["DC(nD_R)", "nDC(D_R)"]:
             class_weights[class_name] *= 0.75
         else:
             raise ValueError(f"Unknown class_name {class_name} found. Can't tune weights.")
