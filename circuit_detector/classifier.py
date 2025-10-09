@@ -549,6 +549,7 @@ def predict_circuit_class(uzf_path: Union[str, Path],
             - "class_name": Predicted class name
             - "confidence": Prediction confidence score
             - "probabilities": Full probability distribution
+            - "features": CircuitFeatures object with extracted features
 
     Raises:
         FileNotFoundError: If UZF file doesn't exist
@@ -574,7 +575,8 @@ def predict_circuit_class(uzf_path: Union[str, Path],
         "confidence": confidence,
         "probabilities": probabilities.tolist(),
         "feature_count": len(features.feature_vector),
-        "uzf_path": str(uzf_path)
+        "uzf_path": str(uzf_path),
+        "features": features
     }
 
     return result

@@ -14,6 +14,9 @@ from .classifier import (
     train_classifier,
     predict_circuit_class
 )
+from .regression import (
+    detect_parameters
+)
 
 __version__ = "0.3.0"
 
@@ -22,5 +25,6 @@ __all__ = [
     "CircuitClassifier",
     "extract_features_from_uzf",
     "train_classifier",
-    "predict_circuit_class"
+    "predict_circuit_class",
+    "detect_parameters"
 ]
