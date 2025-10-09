@@ -88,8 +88,8 @@ def _save_circuit_files(circuit, original_ivc, simulator, measurement_variant, o
 
     # Save without noise if enabled
     if measurement_variant["noise_settings"]["without_noise"]:
-        uzf_name = os.path.join(output_path, f"{cls}_params{index:03d}_noise_no.uzf")
-        png_name = os.path.join(output_path, f"{cls}_params{index:03d}_noise_no.png")
+        uzf_name = os.path.join(output_path, f"{cls}_params{index:04d}_noise_no.uzf")
+        png_name = os.path.join(output_path, f"{cls}_params{index:04d}_noise_no.png")
         simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
         simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
 
@@ -97,8 +97,8 @@ def _save_circuit_files(circuit, original_ivc, simulator, measurement_variant, o
     for noise_number in range(measurement_variant["noise_settings"]["with_noise_copies"]):
         analysis = simulator.add_noise(analysis, measurement_variant["noise_settings"])
 
-        uzf_name = os.path.join(output_path, f"{cls}_params{index:03d}_noise{noise_number+1:03d}.uzf")
-        png_name = os.path.join(output_path, f"{cls}_params{index:03d}_noise{noise_number+1:03d}.png")
+        uzf_name = os.path.join(output_path, f"{cls}_params{index:04d}_noise{noise_number+1:04d}.uzf")
+        png_name = os.path.join(output_path, f"{cls}_params{index:04d}_noise{noise_number+1:04d}.png")
         simulator.save_ivc(circuit.plot_title, analysis, uzf_name)
         simulator.save_plot(circuit.plot_title, analysis, png_name, scheme_png_path, save_png=save_png)
 
@@ -122,7 +122,7 @@ def _process_single_circuit(circuit, params_combination, index, cls, changer, si
         save_png: Whether to save PNG plots
         disable_filtering: If True, skip boundary condition filtering
     """
-    print(f"Generating {output_path}_params{index:03d} with {_format_params(params_combination)}")
+    print(f"Generating {output_path}_params{index:04d} with {_format_params(params_combination)}")
 
     # Make actual simulation to get I-V curve
     original_ivc = simulator.get_ivc(circuit)

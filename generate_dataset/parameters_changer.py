@@ -140,7 +140,7 @@ class ParametersChanger:
         """
         os.makedirs(base_folder, exist_ok=True)
         for i, circuit in enumerate(self.circuits):
-            with open(os.path.join(base_folder, f"{i:03d}.cir"), "w+") as f:
+            with open(os.path.join(base_folder, f"{i:04d}.cir"), "w+") as f:
                 f.write(str(circuit))
 
     def _params_combination_to_circuit(self, params_combination):
