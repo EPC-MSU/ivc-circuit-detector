@@ -4,6 +4,11 @@ from epcore.elements import Board
 from epcore.filemanager import save_board_to_ufiv
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PySpice.Spice.Parser import Circuit
+import matplotlib
+
+
+# The matplotlib backend that can be used with threading
+matplotlib.use("agg")
 
 
 class SimulatorIVC:
