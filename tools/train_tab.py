@@ -224,6 +224,30 @@ class TrainTab(BaseTab):
                     self.log(f"Model classes: {classifier.classes_}")
                     self.log(f"Number of classes: {classifier.n_classes}")
 
+                    # Display feature importances
+                    if hasattr(classifier.model, "feature_importances_"):
+                        self.log("\nFeature Importances:")
+                        feature_importances = classifier.model.feature_importances_
+
+                        # Get feature names by extracting from a sample UZF file
+                        feature_names = None
+                        try:
+                            import glob
+                            uzf_files = glob.glob(str(dataset_path / "**/*.uzf"), recursive=True)
+                            if uzf_files:
+                                sample_features = circuit_detector.extract_features_from_uzf(uzf_files[0])
+                                feature_names = sample_features.feature_names
+                        except Exception as e:
+                            self.log(f"Warning: Could not extract feature names: {e}")
+
+                        # Sort features by importance in descending order
+                        sorted_indices = feature_importances.argsort()[::-1]
+                        for idx in sorted_indices:
+                            if feature_names and idx < len(feature_names):
+                                self.log(f"  {feature_names[idx]}: {feature_importances[idx]:.6f}")
+                            else:
+                                self.log(f"  Feature {idx}: {feature_importances[idx]:.6f}")
+
                     # Show success message in main thread
                     self.root.after(0, lambda: messagebox.showinfo("Success", "Model training completed successfully!"))
 
