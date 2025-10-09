@@ -42,15 +42,15 @@
     ],
     "D": [
       {
-        "_name": "Normal temperature",
-        "_units": "C",
-        "cir_key": "Tnom",
+        "_name": "Emission coefficient",
+        "_units": "",
+        "cir_key": "N",
         "cir_unit": null,
         "nominal": {
           "type": "list",
           "value": [
-            400.0,
-            800.0
+            1,
+            3
           ]
         }
       }
