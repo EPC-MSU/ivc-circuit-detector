@@ -9,7 +9,6 @@ from tkinter import ttk, messagebox, filedialog
 import json
 import os
 import sys
-import subprocess
 from pathlib import Path
 import threading
 import traceback
@@ -20,13 +19,16 @@ from epcore.filemanager.ufiv import load_board_from_ufiv
 
 
 global circuit_detector
+global generate_dataset_module
 
 
 def complex_import():
     global circuit_detector
+    global generate_dataset_module
     parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     sys.path.append(parent_dir)
     import circuit_detector
+    from generate_dataset import dataset_generator as generate_dataset_module
 
 
 complex_import()
@@ -62,6 +64,7 @@ class DatasetGUI:
         self.create_dataset_tab()
         self.create_train_tab()
         self.create_filter_tab()
+        self.create_uzf_testing_tab()
 
         # Load initial parameters
         self.load_parameters()
@@ -433,6 +436,64 @@ class DatasetGUI:
         # Clear the initial plot (after all widgets are created)
         self.clear_plot()
 
+    def create_uzf_testing_tab(self):
+        """Create the UZF testing tab"""
+        self.uzf_testing_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.uzf_testing_frame, text="UZF Testing")
+
+        # Create main container
+        main_container = ttk.Frame(self.uzf_testing_frame)
+        main_container.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # SETTINGS SECTION
+        settings_frame = ttk.LabelFrame(main_container, text="Settings")
+        settings_frame.pack(fill="x", padx=5, pady=5)
+
+        # Model File
+        model_entry_frame = ttk.Frame(settings_frame)
+        model_entry_frame.pack(fill="x", padx=5, pady=5)
+
+        ttk.Label(model_entry_frame, text="Model File:").pack(anchor="w")
+        model_input_frame = ttk.Frame(model_entry_frame)
+        model_input_frame.pack(fill="x", pady=(2, 0))
+
+        self.uzf_test_model_var = tk.StringVar(value="model/model.pkl")
+        self.uzf_test_model_entry = ttk.Entry(model_input_frame, textvariable=self.uzf_test_model_var)
+        self.uzf_test_model_entry.pack(side="left", fill="x", expand=True, padx=(0, 5))
+
+        ttk.Button(model_input_frame, text="Browse", command=self.browse_uzf_test_model_file).pack(side="right")
+
+        # UZF File
+        uzf_entry_frame = ttk.Frame(settings_frame)
+        uzf_entry_frame.pack(fill="x", padx=5, pady=5)
+
+        ttk.Label(uzf_entry_frame, text="UZF File:").pack(anchor="w")
+        uzf_input_frame = ttk.Frame(uzf_entry_frame)
+        uzf_input_frame.pack(fill="x", pady=(2, 0))
+
+        self.uzf_test_file_var = tk.StringVar(value="")
+        self.uzf_test_file_entry = ttk.Entry(uzf_input_frame, textvariable=self.uzf_test_file_var)
+        self.uzf_test_file_entry.pack(side="left", fill="x", expand=True, padx=(0, 5))
+
+        ttk.Button(uzf_input_frame, text="Browse", command=self.browse_uzf_test_file).pack(side="right")
+
+        # RECOGNIZE BUTTON
+        recognize_button_frame = ttk.Frame(main_container)
+        recognize_button_frame.pack(fill="x", padx=5, pady=10)
+
+        ttk.Button(recognize_button_frame, text="Recognize", command=self.recognize_uzf).pack(anchor="center")
+
+        # RESULTS/LOG SECTION
+        results_frame = ttk.LabelFrame(main_container, text="Recognition Results")
+        results_frame.pack(fill="both", expand=True, padx=5, pady=(5, 0))
+
+        self.uzf_test_results_text = tk.Text(results_frame, height=20, state="disabled", wrap=tk.WORD)
+        uzf_test_scrollbar = ttk.Scrollbar(results_frame, orient="vertical", command=self.uzf_test_results_text.yview)
+        self.uzf_test_results_text.configure(yscrollcommand=uzf_test_scrollbar.set)
+
+        self.uzf_test_results_text.pack(side="left", fill="both", expand=True)
+        uzf_test_scrollbar.pack(side="right", fill="y")
+
     def load_parameters(self):
         """Load parameters from parameters_variations.json"""
         try:
@@ -541,64 +602,73 @@ class DatasetGUI:
                 self.dataset_dir_var.set(directory)
 
     def generate_dataset(self):
-        """Execute dataset generation"""
-        try:
-            # Build command
-            cmd = [sys.executable, "-m", "generate_dataset"]
+        """Execute dataset generation using API"""
 
-            # Add dataset directory if not default
-            dataset_dir = self.dataset_dir_var.get().strip()
-            if dataset_dir and dataset_dir != "dataset":
-                cmd.extend(["--dataset-dir", dataset_dir])
-
-            # Add image flag if enabled
-            if self.image_var.get():
-                cmd.append("--image")
-
-            # Add disable-filtering flag if enabled
-            if self.disable_filtering_var.get():
-                cmd.append("--disable-filtering")
-
-            self.log_status("Starting dataset generation...")
-            self.log_status(f"Command: {' '.join(cmd)}")
-
-            # Change to project root directory
-            original_cwd = os.getcwd()
-            os.chdir(self.project_root)
-
+        # Run generation in a separate thread to avoid blocking the GUI
+        def generation_thread():
             try:
-                # Run command
-                process = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    universal_newlines=True
-                )
+                # Get parameters
+                dataset_dir = self.dataset_dir_var.get().strip()
+                save_png = self.image_var.get()
+                disable_filtering = self.disable_filtering_var.get()
 
-                # Read output in real-time
-                while True:
-                    output = process.stdout.readline()
-                    if output == "" and process.poll() is not None:
-                        break
-                    if output:
-                        self.log_status(output.strip())
-                        self.root.update_idletasks()
+                self.log_status("Starting dataset generation...")
+                self.log_status(f"Dataset directory: {dataset_dir if dataset_dir else 'dataset'}")
+                self.log_status(f"Generate images: {save_png}")
+                self.log_status(f"Disable filtering: {disable_filtering}")
+                self.log_status("")
 
-                # Check return code
-                return_code = process.poll()
-                if return_code == 0:
+                # Change to project root directory
+                original_cwd = os.getcwd()
+                os.chdir(self.project_root)
+
+                try:
+                    # Redirect stdout to capture print statements from generate_dataset
+                    import io
+                    from contextlib import redirect_stdout
+
+                    output_buffer = io.StringIO()
+
+                    with redirect_stdout(output_buffer):
+                        # Call the generate_dataset API
+                        generate_dataset_module.generate_dataset(
+                            save_png=save_png,
+                            dataset_dir=dataset_dir if dataset_dir else None,
+                            disable_filtering=disable_filtering
+                        )
+
+                    # Get all output and log it
+                    output = output_buffer.getvalue()
+                    for line in output.split('\n'):
+                        if line.strip():
+                            self.log_status(line)
+
+                    self.log_status("")
                     self.log_status("Dataset generation completed successfully!")
-                    messagebox.showinfo("Success", "Dataset generation completed!")
-                else:
-                    self.log_status(f"Dataset generation failed with return code {return_code}")
-                    messagebox.showerror("Error", "Dataset generation failed. Check the status log for details.")
 
-            finally:
-                os.chdir(original_cwd)
+                    # Show success message in main thread
+                    self.root.after(0, lambda: messagebox.showinfo("Success", "Dataset generation completed!"))
 
-        except Exception as e:
-            self.log_status(f"Error: {e}")
-            messagebox.showerror("Error", f"Failed to start dataset generation: {e}")
+                except Exception as e:
+                    error_msg = f"Dataset generation failed: {str(e)}"
+                    self.log_status("")
+                    self.log_status(error_msg)
+                    self.log_status(f"Error details: {traceback.format_exc()}")
+                    # Show error message in main thread
+                    self.root.after(0, lambda: messagebox.showerror("Error", error_msg))
+
+                finally:
+                    os.chdir(original_cwd)
+
+            except Exception as e:
+                error_msg = f"Unexpected error: {str(e)}"
+                self.log_status("")
+                self.log_status(error_msg)
+                self.root.after(0, lambda: messagebox.showerror("Error", error_msg))
+
+        # Start generation in background thread
+        thread = threading.Thread(target=generation_thread, daemon=True)
+        thread.start()
 
     def browse_train_dataset(self):
         """Browse for training dataset directory"""
@@ -1022,6 +1092,155 @@ class DatasetGUI:
         self.status_text.insert(tk.END, f"{message}\n")
         self.status_text.see(tk.END)
         self.status_text.config(state="disabled")
+
+    def log_uzf_test_results(self, message):
+        """Add message to UZF test results log"""
+        self.uzf_test_results_text.config(state="normal")
+        self.uzf_test_results_text.insert(tk.END, f"{message}\n")
+        self.uzf_test_results_text.see(tk.END)
+        self.uzf_test_results_text.config(state="disabled")
+
+    def browse_uzf_test_model_file(self):
+        """Browse for UZF test model file path (existing file)"""
+        file_path = filedialog.askopenfilename(
+            initialdir=self.project_root,
+            title="Select Model File for UZF Testing",
+            defaultextension=".pkl",
+            filetypes=[("Pickle files", "*.pkl"), ("All files", "*.*")]
+        )
+        if file_path:
+            try:
+                rel_path = Path(file_path).relative_to(self.project_root)
+                self.uzf_test_model_var.set(str(rel_path))
+            except ValueError:
+                self.uzf_test_model_var.set(file_path)
+
+    def browse_uzf_test_file(self):
+        """Browse for UZF file to test"""
+        file_path = filedialog.askopenfilename(
+            initialdir=self.project_root,
+            title="Select UZF File for Testing",
+            defaultextension=".uzf",
+            filetypes=[("UZF files", "*.uzf"), ("All files", "*.*")]
+        )
+        if file_path:
+            try:
+                rel_path = Path(file_path).relative_to(self.project_root)
+                self.uzf_test_file_var.set(str(rel_path))
+            except ValueError:
+                self.uzf_test_file_var.set(file_path)
+
+    def recognize_uzf(self):
+        """Execute UZF recognition using circuit_detector API"""
+
+        # Run recognition in a separate thread to avoid blocking the GUI
+        def recognition_thread():
+            try:
+                # Get and validate fields
+                model_file = self._safe_get_field(self.uzf_test_model_var, "model file path")
+                uzf_file = self._safe_get_field(self.uzf_test_file_var, "UZF file path")
+
+                self.log_uzf_test_results("Starting UZF recognition...")
+                self.log_uzf_test_results(f"Model: {model_file}")
+                self.log_uzf_test_results(f"UZF File: {uzf_file}")
+                self.log_uzf_test_results("")
+
+                # Change to project root directory
+                original_cwd = os.getcwd()
+                os.chdir(self.project_root)
+
+                try:
+                    # Resolve paths
+                    model_path = Path(model_file)
+                    if not model_path.is_absolute():
+                        model_path = self.project_root / model_path
+
+                    uzf_path = Path(uzf_file)
+                    if not uzf_path.is_absolute():
+                        uzf_path = self.project_root / uzf_path
+
+                    # Check if files exist
+                    if not model_path.exists():
+                        raise FileNotFoundError(f"Model file not found: {model_path}")
+                    if not uzf_path.exists():
+                        raise FileNotFoundError(f"UZF file not found: {uzf_path}")
+
+                    # Extract features from UZF
+                    self.log_uzf_test_results("Extracting features from UZF file...")
+                    from circuit_detector.features import extract_features_from_uzf
+                    from circuit_detector.classifier import predict_circuit_class, CircuitClassifier
+                    from circuit_detector.regression import detect_parameters
+
+                    features = extract_features_from_uzf(uzf_path)
+
+                    # If class_name is empty, use classifier to predict it
+                    if not features.class_name:
+                        self.log_uzf_test_results("No class name in UZF file, loading classifier...")
+                        classifier = CircuitClassifier.load(model_path)
+
+                        self.log_uzf_test_results("Predicting circuit class...")
+                        result = predict_circuit_class(uzf_path, classifier)
+                        features = result["features"]
+
+                        self.log_uzf_test_results(f"Detected Circuit Class: {features.class_name}")
+                        self.log_uzf_test_results(f"Confidence: {result['confidence']:.3f}")
+                        self.log_uzf_test_results("")
+                        self.log_uzf_test_results("Class Probabilities:")
+                        for i, prob in enumerate(result["probabilities"]):
+                            class_name = classifier.classes_[i]
+                            self.log_uzf_test_results(f"  {class_name}: {prob:.3f}")
+                    else:
+                        self.log_uzf_test_results(f"Circuit Class from UZF: {features.class_name}")
+
+                    self.log_uzf_test_results("")
+                    self.log_uzf_test_results(f"Detecting parameters for circuit class: {features.class_name}")
+
+                    # Detect parameters
+                    try:
+                        parameters = detect_parameters(features)
+
+                        self.log_uzf_test_results("")
+                        self.log_uzf_test_results("Detected Parameters:")
+                        for element_name, value in parameters.items():
+                            self.log_uzf_test_results(f"  {element_name}: {value}")
+
+                        self.log_uzf_test_results("")
+                        self.log_uzf_test_results("Recognition completed successfully!")
+
+                        # Show success message in main thread
+                        self.root.after(0, lambda: messagebox.showinfo("Success", "UZF recognition completed!"))
+
+                    except (ValueError, NotImplementedError) as e:
+                        error_msg = f"Parameter detection failed: {str(e)}"
+                        self.log_uzf_test_results("")
+                        self.log_uzf_test_results(error_msg)
+                        # Show error message in main thread
+                        self.root.after(0, lambda: messagebox.showerror("Error", error_msg))
+
+                except Exception as e:
+                    error_msg = f"Recognition failed: {str(e)}"
+                    self.log_uzf_test_results("")
+                    self.log_uzf_test_results(error_msg)
+                    self.log_uzf_test_results(f"Error details: {traceback.format_exc()}")
+                    # Show error message in main thread
+                    self.root.after(0, lambda: messagebox.showerror("Error", error_msg))
+
+                finally:
+                    os.chdir(original_cwd)
+
+            except FieldValidationError as e:
+                messagebox.showerror("Error", str(e))
+                return
+
+            except Exception as e:
+                error_msg = f"Unexpected error: {str(e)}"
+                self.log_uzf_test_results("")
+                self.log_uzf_test_results(error_msg)
+                self.root.after(0, lambda: messagebox.showerror("Error", error_msg))
+
+        # Start recognition in background thread
+        thread = threading.Thread(target=recognition_thread, daemon=True)
+        thread.start()
 
 
 def main():
