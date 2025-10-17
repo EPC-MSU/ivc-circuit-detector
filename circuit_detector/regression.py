@@ -48,7 +48,7 @@ def detect_parameters(circuit_features: CircuitFeatures) -> Dict[str, float]:
     # Determine which group the circuit class belongs to
     group = _get_circuit_group(class_name)
 
-    if group is "":
+    if group == "":
         raise ValueError(f"Circuit class '{class_name}' is not a member of any known circuit group")
 
     # Apply the appropriate algorithm based on the group
@@ -295,10 +295,10 @@ def _extract_harmonics(circuit_features: CircuitFeatures) -> list:
         # This accounts for unknown phase shift in the measurement system
         phase_offset = h1_phase + np.pi / 2
 
-        # Apply phase correction by subtracting the common offset
+        # Apply phase correction by subtracting the offset which grows for every harmonic (see FFT formulas)
         corrected_h1_phase = h1_phase - phase_offset
-        corrected_h2_phase = h2_phase - phase_offset
-        corrected_h3_phase = h3_phase - phase_offset
+        corrected_h2_phase = h2_phase - 2 * phase_offset
+        corrected_h3_phase = h3_phase - 3 * phase_offset
 
         # Extract real and imaginary components with corrected phases
         h1_amplitude = np.abs(fft_h1)
@@ -369,9 +369,6 @@ def _detect_diodes_resistors_parameters(circuit_features: CircuitFeatures) -> Di
 
         # Calculate theoretical harmonics (in dimensionless form)
         h_theory = _calculate_harmonics(r, y, z) * voltage_amplitude / r_int
-
-        print(r, y, z)
-        print(h_theory, h_exp)
 
         # Return residuals for harmonics 1, 2, 3
         return [h_theory[1] - h_exp[1], h_theory[2] - h_exp[2], h_theory[3] - h_exp[3]]
