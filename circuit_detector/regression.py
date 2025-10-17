@@ -378,10 +378,10 @@ def _detect_diodes_resistors_parameters(circuit_features: CircuitFeatures) -> Di
 
     # Solve the nonlinear system
     try:
-        solution = root(_equations, initial_guess, args=(h_experimental,), tol=1e-6)
+        solution = root(_equations, initial_guess, args=(h_experimental,),
+                        tol=1e-6, method="hybr", options={"maxfev": 40})
 
-        # if not solution.success:
-        #    raise ValueError(f"Solver failed to converge: {solution.message}")
+        print(solution)
 
         proto_r_solved, proto_y_solved, proto_z_solved = solution.x
     except Exception as e:
@@ -397,14 +397,14 @@ def _detect_diodes_resistors_parameters(circuit_features: CircuitFeatures) -> Di
 
     # Calculate R from r ratio: r = R / (R + R_int)
     # Solving: R = r * (R + R_int) => R = r * R + r * R_int => R(1 - r) = r * R_int => R = r * R_int / (1 - r)
-    if r_solution < 0.999:
+    if r_solution < 0.995:
         r_calculated = (r_solution / (1 - r_solution)) * r_int
         result["R"] = float(r_calculated)
     else:
         result["R"] = float(np.inf)
 
     # Calculate V_threshold_forward from y: y = V_threshold_forward / (V_amplitude * r)
-    if y_solution < 0.999:
+    if y_solution < 0.995:
         v_threshold_forward = y_solution * r_solution * voltage_amplitude
         result["Df"] = float(v_threshold_forward)
     else:
@@ -412,7 +412,7 @@ def _detect_diodes_resistors_parameters(circuit_features: CircuitFeatures) -> Di
         result["Df"] = float(np.inf)
 
     # Calculate V_threshold_reverse from z: z = V_threshold_reverse / (V_amplitude * r)
-    if z_solution < 0.999:
+    if z_solution < 0.995:
         v_threshold_reverse = z_solution * r_solution * voltage_amplitude
         result["Dr"] = float(v_threshold_reverse)
     else:
