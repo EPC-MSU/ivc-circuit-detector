@@ -381,8 +381,6 @@ def _detect_diodes_resistors_parameters(circuit_features: CircuitFeatures) -> Di
         solution = root(_equations, initial_guess, args=(h_experimental,),
                         tol=1e-6, method="hybr", options={"maxfev": 40})
 
-        print(solution)
-
         proto_r_solved, proto_y_solved, proto_z_solved = solution.x
     except Exception as e:
         raise ValueError(f"Failed to solve nonlinear system: {str(e)}")
