@@ -3,10 +3,13 @@ UZF Testing Tab for the GUI tool.
 """
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 import os
 import threading
 import traceback
+import numpy as np
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 from tools.base_tab import BaseTab
 from tools.gui_utils import safe_get_field, FieldValidationError, resolve_path
@@ -32,17 +35,17 @@ class UZFTestingTab(BaseTab):
         self.uzf_test_model_var = None
         self.uzf_test_file_var = None
 
+        # Matplotlib components
+        self.uzf_figure = None
+        self.uzf_canvas = None
+
         # Create the tab UI
         self.create_tab()
 
     def create_tab(self):
         """Create the UZF testing tab UI."""
-        # Create main container
-        main_container = ttk.Frame(self.frame)
-        main_container.pack(fill="both", expand=True, padx=5, pady=5)
-
-        # SETTINGS SECTION
-        settings_frame = ttk.LabelFrame(main_container, text="Settings")
+        # SETTINGS SECTION (no expand - fixed height)
+        settings_frame = ttk.LabelFrame(self.frame, text="Settings")
         settings_frame.pack(fill="x", padx=5, pady=5)
 
         # Model File
@@ -73,11 +76,25 @@ class UZFTestingTab(BaseTab):
 
         ttk.Button(uzf_input_frame, text="Browse", command=self._browse_uzf_test_file).pack(side="right")
 
-        # RECOGNIZE BUTTON
-        recognize_button_frame = ttk.Frame(main_container)
+        # RECOGNIZE BUTTON (no expand - fixed height)
+        recognize_button_frame = ttk.Frame(self.frame)
         recognize_button_frame.pack(fill="x", padx=5, pady=10)
 
         ttk.Button(recognize_button_frame, text="Recognize", command=self.recognize_uzf).pack(anchor="center")
+
+    def create_plots(self):
+        """Create the plots section. Call this after the log widget has been added to the tab."""
+        # PLOTS SECTION (expand=True - takes remaining space, positioned after log)
+        plots_frame = ttk.LabelFrame(self.frame, text="Analysis Results")
+        plots_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # Create matplotlib figure with two subplots side by side
+        self.uzf_figure = Figure(figsize=(14, 6), dpi=80)
+        self.uzf_canvas = FigureCanvasTkAgg(self.uzf_figure, master=plots_frame)
+        self.uzf_canvas.get_tk_widget().pack(fill="both", expand=True, padx=5, pady=5)
+
+        # Clear the initial plot
+        self.clear_plots()
 
     def _browse_uzf_test_model_file(self):
         """Browse for UZF test model file path (existing file)"""
@@ -96,6 +113,85 @@ class UZFTestingTab(BaseTab):
             [("UZF files", "*.uzf"), ("All files", "*.*")],
             mode="open"
         )
+
+    def clear_plots(self):
+        """Clear the plots and show empty state"""
+        if self.uzf_figure:
+            self.uzf_figure.clear()
+            ax = self.uzf_figure.add_subplot(111)
+            ax.text(0.5, 0.5, "No data to display", ha="center", va="center", transform=ax.transAxes)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            self.uzf_canvas.draw()
+
+    def display_results(self, voltages, currents, measurement_settings):
+        """Display analysis results with two plots: I-V curve and current/voltage vs time"""
+        # Clear previous plots
+        self.uzf_figure.clear()
+
+        # Create two subplots side by side
+        ax1 = self.uzf_figure.add_subplot(121)
+        ax2 = self.uzf_figure.add_subplot(122)
+
+        # PLOT 1: I-V Characteristic (same as Dataset filtering tab)
+        ax1.grid(True)
+        ax1.plot(voltages, currents, "b-", linewidth=2)
+        ax1.set_xlabel("Voltage [V]")
+        ax1.set_ylabel("Current [A]")
+        ax1.set_title("I-V Characteristic")
+
+        # Set fixed axis ranges based on measurement parameters
+        max_voltage = measurement_settings.max_voltage
+        internal_resistance = measurement_settings.internal_resistance
+
+        # X-axis: 20% wider than [-max_voltage, max_voltage]
+        x_range = max_voltage * 1.2
+        ax1.set_xlim(-x_range, x_range)
+
+        # Y-axis: max_voltage / internal_resistance * 1.2, centered at 0
+        y_max = (max_voltage / internal_resistance) * 1.2
+        ax1.set_ylim(-y_max, y_max)
+
+        # PLOT 2: Current and Voltage vs Time with symmetrical y-axis ranges
+        # Calculate time array using sampling frequency
+        sampling_rate = measurement_settings.sampling_rate
+        num_samples = len(voltages)
+        time = np.arange(num_samples) / sampling_rate  # Convert to seconds
+
+        # Plot both voltage and current on same axis
+        ax2.grid(True)
+        line1 = ax2.plot(time, voltages, "b-", linewidth=2, label="Voltage")
+        ax2.set_xlabel("Time [s]")
+        ax2.set_ylabel("Voltage [V]", color="b")
+        ax2.tick_params(axis="y", labelcolor="b")
+
+        # Create twin axis for current
+        ax2_twin = ax2.twinx()
+        line2 = ax2_twin.plot(time, currents, "r-", linewidth=2, label="Current")
+        ax2_twin.set_ylabel("Current [A]", color="r")
+        ax2_twin.tick_params(axis="y", labelcolor="r")
+
+        # Make y-axis ranges symmetrical so zero level is the same for both
+        # Get the maximum absolute values
+        max_voltage_abs = np.max(np.abs(voltages))
+        max_current_abs = np.max(np.abs(currents))
+
+        # Set symmetric ranges
+        ax2.set_ylim(-max_voltage_abs * 1.1, max_voltage_abs * 1.1)
+        ax2_twin.set_ylim(-max_current_abs * 1.1, max_current_abs * 1.1)
+
+        ax2.set_title("Current and Voltage vs Time")
+
+        # Combine legends from both axes
+        lines = line1 + line2
+        labels = [line.get_label() for line in lines]
+        ax2.legend(lines, labels, loc="upper right")
+
+        # Adjust layout to prevent label cutoff
+        self.uzf_figure.tight_layout()
+
+        # Update canvas
+        self.uzf_canvas.draw()
 
     def recognize_uzf(self):
         """Execute UZF recognition using circuit_detector API"""
@@ -135,6 +231,14 @@ class UZFTestingTab(BaseTab):
 
                     features = extract_features_from_uzf(uzf_path)
 
+                    # Extract voltages, currents and measurement settings
+                    voltages = features.voltages
+                    currents = features.currents
+                    measurement_settings = features.measurement_settings
+
+                    # Display plots immediately (before running recognition)
+                    self.root.after(0, lambda: self.display_results(voltages, currents, measurement_settings))
+
                     # If class_name is empty, use classifier to predict it
                     if not features.class_name:
                         self.log("No class name in UZF file, loading classifier...")
@@ -169,36 +273,28 @@ class UZFTestingTab(BaseTab):
                         self.log("")
                         self.log("Recognition completed successfully!")
 
-                        # Show success message in main thread
-                        self.root.after(0, lambda: messagebox.showinfo("Success", "UZF recognition completed!"))
-
                     except (ValueError, NotImplementedError) as e:
                         error_msg = f"Parameter detection failed: {str(e)}"
                         self.log("")
                         self.log(error_msg)
-                        # Show error message in main thread
-                        self.root.after(0, lambda: messagebox.showerror("Error", error_msg))
 
                 except Exception as e:
                     error_msg = f"Recognition failed: {str(e)}"
                     self.log("")
                     self.log(error_msg)
                     self.log(f"Error details: {traceback.format_exc()}")
-                    # Show error message in main thread
-                    self.root.after(0, lambda: messagebox.showerror("Error", error_msg))
 
                 finally:
                     os.chdir(original_cwd)
 
             except FieldValidationError as e:
-                messagebox.showerror("Error", str(e))
+                self.log(f"Error: {str(e)}")
                 return
 
             except Exception as e:
                 error_msg = f"Unexpected error: {str(e)}"
                 self.log("")
                 self.log(error_msg)
-                self.root.after(0, lambda: messagebox.showerror("Error", error_msg))
 
         # Start recognition in background thread
         thread = threading.Thread(target=recognition_thread, daemon=True)
