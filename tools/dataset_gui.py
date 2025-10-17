@@ -117,14 +117,17 @@ class DatasetGUI:
 
         # Create results text widget for UZF testing tab
         results_frame = ttk.LabelFrame(self.uzf_testing_tab.frame, text="Recognition Results")
-        results_frame.pack(fill="both", expand=True, padx=5, pady=(5, 0))
+        results_frame.pack(fill="x", padx=5, pady=(5, 0))
 
-        self.uzf_test_results_text = tk.Text(results_frame, height=20, state="disabled", wrap=tk.WORD)
+        self.uzf_test_results_text = tk.Text(results_frame, height=8, state="disabled", wrap=tk.WORD)
         uzf_test_scrollbar = ttk.Scrollbar(results_frame, orient="vertical", command=self.uzf_test_results_text.yview)
         self.uzf_test_results_text.configure(yscrollcommand=uzf_test_scrollbar.set)
 
         self.uzf_test_results_text.pack(side="left", fill="both", expand=True)
         uzf_test_scrollbar.pack(side="right", fill="y")
+
+        # Create plots section after log widget (so it appears at the bottom)
+        self.uzf_testing_tab.create_plots()
 
     def log_dataset_status(self, message):
         """Add message to dataset status log"""
