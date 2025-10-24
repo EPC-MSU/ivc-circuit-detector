@@ -5,6 +5,7 @@ from epcore.filemanager import save_board_to_ufiv
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PySpice.Spice.Parser import Circuit
 import matplotlib
+import random
 
 
 # The matplotlib backend that can be used with threading
@@ -29,8 +30,12 @@ class SimulatorIVC:
 
         period = 1 / self.measurement_settings["probe_signal_frequency"]
 
+        # Add random phase offset to precharge delay for phase randomization
+        random_phase_offset = random.uniform(0, 1) * period
+        total_precharge_delay = self.measurement_settings["precharge_delay"] + random_phase_offset
+
         step_time = period / (ssr / self.measurement_settings["probe_signal_frequency"])
-        end_time = period + self.measurement_settings["precharge_delay"]
+        end_time = total_precharge_delay + period
 
         simulator = circuit.simulator()
         analysis = simulator.transient(step_time=step_time, end_time=end_time)
