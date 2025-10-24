@@ -6,6 +6,7 @@ from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PySpice.Spice.Parser import Circuit
 import matplotlib
 import random
+import re
 
 
 # The matplotlib backend that can be used with threading
@@ -17,22 +18,122 @@ class SimulatorIVC:
         self.measurement_settings = measurement_variant["measurement_settings"]
         self.noise_settings = measurement_variant["noise_settings"]
 
+    @staticmethod
+    def _parse_spice_value(value_str):
+        """Parse SPICE value string with units (e.g., '1u', '100n', '4.7k')
+
+        Returns value in base SI units (Farads for capacitance, Ohms for resistance)
+        """
+        if isinstance(value_str, (int, float)):
+            return float(value_str)
+
+        value_str = str(value_str).strip()
+
+        # SPICE unit multipliers
+        units = {
+            "f": 1e-15,  # femto
+            "p": 1e-12,  # pico
+            "n": 1e-9,   # nano
+            "u": 1e-6,   # micro
+            "m": 1e-3,   # milli
+            "k": 1e3,    # kilo
+            "meg": 1e6,  # mega
+            "g": 1e9,    # giga
+        }
+
+        # Try to match number + optional unit
+        match = re.match(r"([+-]?(?:\d+\.?\d*|\.\d+))\s*([a-zA-Z]*)", value_str)
+
+        if not match:
+            raise ValueError(f"Cannot parse value: {value_str}")
+
+        number_str, unit_str = match.groups()
+        number = float(number_str)
+        unit_str = unit_str.lower()
+
+        if unit_str in units:
+            return number * units[unit_str]
+        elif unit_str == "":
+            return number
+        else:
+            raise ValueError(f"Unknown unit: {unit_str}")
+
+    @staticmethod
+    def _get_circuit_rc_time_constant(circuit: Circuit, internal_resistance):
+        """Calculate RC time constant for the circuit
+
+        Extracts the single capacitance from the circuit's plot_title and calculates
+        the RC time constant based on internal measurement resistance.
+        Circuits must have 0 or 1 capacitor. Multiple capacitors are not supported.
+        plot_title format: "Class: [ClassName]\nC1(1u)\nR1(1k)\n..."
+
+        Args:
+            circuit: PySpice Circuit object with plot_title attribute
+            internal_resistance: Measurement internal resistance in Ohms
+
+        Returns:
+            RC time constant in seconds. Returns 0 if no capacitors found.
+
+        Raises:
+            ValueError: If more than one capacitor is found in the circuit
+        """
+        try:
+            plot_title = circuit.plot_title
+            # Find all capacitor entries: match lines like "C1(1u)" or "C2(100n)"
+            # Pattern: C followed by number(s), then parentheses with value
+            capacitor_pattern = r"C\d+\(([^)]+)\)"
+            matches = re.findall(capacitor_pattern, plot_title)
+
+            if len(matches) == 0:
+                # No capacitors found
+                return 0.0
+            elif len(matches) == 1:
+                # Exactly one capacitor - this is the expected case
+                try:
+                    capacitance_str = matches[0].strip()
+                    capacitance_f = SimulatorIVC._parse_spice_value(capacitance_str)
+                except (ValueError, AttributeError) as e:
+                    raise ValueError(f"Failed to parse capacitance value '{capacitance_str}': {e}")
+            else:
+                # More than one capacitor - not supported
+                raise ValueError(
+                    f"Circuit has {len(matches)} capacitors: {matches}. "
+                    "Multiple capacitors are not supported in this approach."
+                )
+
+        except (AttributeError, TypeError) as e:
+            # If plot_title doesn't exist or can't be parsed, return 0
+            return 0.0
+
+        # RC time constant = R * C
+        rc_time_constant = internal_resistance * capacitance_f
+        return rc_time_constant
+
     def get_ivc(self, circuit: Circuit):
         rms_voltage = self.measurement_settings["max_voltage"] / np.sqrt(2)
 
         # ssr = simulator sampling rate
         ssr = self.measurement_settings["sampling_rate"]
 
-        circuit.R("cs", "input", "input_dummy", self.measurement_settings["internal_resistance"])
+        internal_resistance = self.measurement_settings["internal_resistance"]
+        circuit.R("cs", "input", "input_dummy", internal_resistance)
         # circuit.C("coaxial_probes", circuit.gnd, "input_dummy", 204*10**-12)  # 28*10**-12
         circuit.AcLine("Current", circuit.gnd, "input_dummy", rms_voltage=rms_voltage,
                        frequency=self.measurement_settings["probe_signal_frequency"])
 
         period = 1 / self.measurement_settings["probe_signal_frequency"]
 
+        # Calculate RC time constant for the circuit
+        rc_time_constant = self._get_circuit_rc_time_constant(circuit, internal_resistance)
+
+        # Scale precharge delay by RC time constant
+        # precharge_delay_RC_times setting is in units of RC time constants
+        # If no capacitors, RC = 0, so precharge = 0 regardless of setting
+        precharge_delay_seconds = self.measurement_settings["precharge_delay_RC_times"] * rc_time_constant
+
         # Add random phase offset to precharge delay for phase randomization
         random_phase_offset = random.uniform(0, 1) * period
-        total_precharge_delay = self.measurement_settings["precharge_delay"] + random_phase_offset
+        total_precharge_delay = precharge_delay_seconds + random_phase_offset
 
         step_time = period / (ssr / self.measurement_settings["probe_signal_frequency"])
         end_time = total_precharge_delay + period
