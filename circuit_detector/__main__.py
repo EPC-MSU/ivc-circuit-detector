@@ -145,9 +145,12 @@ def detect_params_command(args):
 
         logging.info(f"Predicting circuit class for: {uzf_path}")
         result = predict_circuit_class(uzf_path, classifier)
-        features = result["features"]
 
-        print(f"Detected Circuit Class: {features.class_name} (confidence: {result['confidence']:.3f})")
+        # Use the predicted class name from the result
+        predicted_class_name = result["class_name"]
+        features.class_name = predicted_class_name
+
+        print(f"Detected Circuit Class: {predicted_class_name} (confidence: {result['confidence']:.3f})")
     else:
         print(f"Circuit Class from UZF: {features.class_name}")
 
