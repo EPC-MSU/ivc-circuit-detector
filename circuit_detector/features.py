@@ -206,7 +206,7 @@ def extract_features_from_uzf(uzf_path: Union[str, Path]) -> CircuitFeatures:
 
 
 def extract_features_from_signature(iv_curve: IVCurve, measurement_settings: MeasurementSettings,
-                                    comment: Optional[str] = None) -> CircuitFeatures:
+                                    comment: Optional[str] = "") -> CircuitFeatures:
     voltages = np.array(iv_curve.voltages)
     currents = np.array(iv_curve.currents)
 
