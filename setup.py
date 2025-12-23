@@ -15,7 +15,8 @@ setup(name="ivc-circuit-detector",
       packages=["circuit_detector"],
       python_requires=">=3.6",
       install_requires=[
-          "numpy==1.18.1",
+          'numpy==1.18.1; python_version=="3.6"',
+          'numpy; python_version>"3.6"',
           "scikit-learn==0.24.2",
           "scipy",
           "epcore @ git+https://github.com/EPC-MSU/epcore#egg=epcore"
