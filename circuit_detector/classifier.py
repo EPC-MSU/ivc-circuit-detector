@@ -12,8 +12,9 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
 from sklearn.utils.class_weight import compute_class_weight
+from epcore.elements import IVCurve, MeasurementSettings
 
-from .features import CircuitFeatures, extract_features_from_uzf
+from .features import CircuitFeatures, extract_features_from_uzf, extract_features_from_signature
 
 
 class CircuitClassifier:
@@ -531,6 +532,28 @@ def train_classifier(dataset_dir: Union[str, Path],
     return classifier
 
 
+def _predict_circuit_class_from_features(features: CircuitFeatures, classifier: CircuitClassifier) -> Dict[str, Any]:
+    # Step 2: Get prediction and probabilities
+    class_id = classifier.predict(features)
+    probabilities = classifier.predict_proba(features)
+
+    # Step 3: Get class name from class_id
+    class_name = classifier.classes_[class_id]
+
+    # Step 4: Calculate confidence as the highest probability
+    confidence = float(np.max(probabilities))
+
+    # Step 5: Create comprehensive result dictionary
+    return {
+        "class_id": int(class_id),
+        "class_name": class_name,
+        "confidence": confidence,
+        "probabilities": probabilities.tolist(),
+        "feature_count": len(features.feature_vector),
+        "features": features
+    }
+
+
 def predict_circuit_class(uzf_path: Union[str, Path],
                           classifier: CircuitClassifier) -> Dict[str, Any]:
     """
@@ -558,25 +581,39 @@ def predict_circuit_class(uzf_path: Union[str, Path],
     # Step 1: Extract features from UZF file
     features = extract_features_from_uzf(uzf_path)
 
-    # Step 2: Get prediction and probabilities
-    class_id = classifier.predict(features)
-    probabilities = classifier.predict_proba(features)
-
-    # Step 3: Get class name from class_id
-    class_name = classifier.classes_[class_id]
-
-    # Step 4: Calculate confidence as the highest probability
-    confidence = float(np.max(probabilities))
-
-    # Step 5: Create comprehensive result dictionary
-    result = {
-        "class_id": int(class_id),
-        "class_name": class_name,
-        "confidence": confidence,
-        "probabilities": probabilities.tolist(),
-        "feature_count": len(features.feature_vector),
-        "uzf_path": str(uzf_path),
-        "features": features
-    }
+    # Steps 2-5
+    result = _predict_circuit_class_from_features(features, classifier)
+    result["uzf_path"] = str(uzf_path)
 
     return result
+
+
+def predict_circuit_class_for_signature(iv_curve: IVCurve, measurement_settings: MeasurementSettings,
+                                        classifier: CircuitClassifier) -> Dict[str, Any]:
+    """
+    Complete pipeline function: extract features and predict circuit class.
+
+    This is a convenience function that combines feature extraction and inference
+    in a single call.
+
+    Args:
+        iv_curve: Signature containing I-V curve data
+        measurement_settings: Settings at which the signature was measured
+        classifier: Trained CircuitClassifier instance
+
+    Returns:
+        Dictionary containing:
+            - "class_id": Predicted class number
+            - "class_name": Predicted class name
+            - "confidence": Prediction confidence score
+            - "probabilities": Full probability distribution
+            - "features": CircuitFeatures object with extracted features
+
+    Raises:
+        ValueError: Classifier not trained
+    """
+    # Step 1: Extract features from UZF file
+    features = extract_features_from_signature(iv_curve, measurement_settings)
+
+    # Steps 2-5
+    return _predict_circuit_class_from_features(features, classifier)

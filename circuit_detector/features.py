@@ -8,8 +8,9 @@ and managing CircuitFeatures objects for machine learning classification.
 import re
 from collections import OrderedDict
 from pathlib import Path
-from typing import List, Any, Union
+from typing import List, Any, Optional, Union
 import numpy as np
+from epcore.elements import IVCurve, MeasurementSettings
 from epcore.filemanager.ufiv import load_board_from_ufiv
 
 
@@ -198,23 +199,28 @@ def extract_features_from_uzf(uzf_path: Union[str, Path]) -> CircuitFeatures:
         measurement_obj = measurement.elements[0].pins[0].measurements[0]
         measurement_settings = measurement_obj.settings
         iv_curve = measurement_obj.ivc
-        voltages = np.array(iv_curve.voltages)
-        currents = np.array(iv_curve.currents)
-
-        # Validate extracted data
-        if len(voltages) == 0 or len(currents) == 0:
-            raise ValueError("UZF file contains empty voltage or current arrays")
-
-        if len(voltages) != len(currents):
-            raise ValueError(f"Voltage and current arrays have different lengths: {len(voltages)} vs {len(currents)}")
-
-        # Create CircuitFeatures with extracted data
-        return CircuitFeatures(
-            comment=comment,
-            measurement_settings=measurement_settings,
-            voltages=voltages,
-            currents=currents
-        )
+        return extract_features_from_signature(iv_curve, measurement_settings, comment)
 
     except Exception as e:
         raise ValueError(f"Error reading UZF file {uzf_path}: {str(e)}")
+
+
+def extract_features_from_signature(iv_curve: IVCurve, measurement_settings: MeasurementSettings,
+                                    comment: Optional[str] = None) -> CircuitFeatures:
+    voltages = np.array(iv_curve.voltages)
+    currents = np.array(iv_curve.currents)
+
+    # Validate extracted data
+    if len(voltages) == 0 or len(currents) == 0:
+        raise ValueError("The current or voltage array is empty")
+
+    if len(voltages) != len(currents):
+        raise ValueError(f"Voltage and current arrays have different lengths: {len(voltages)} vs {len(currents)}")
+
+    # Create CircuitFeatures with extracted data
+    return CircuitFeatures(
+        comment=comment,
+        measurement_settings=measurement_settings,
+        voltages=voltages,
+        currents=currents
+    )
