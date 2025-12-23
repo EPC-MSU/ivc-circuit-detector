@@ -23,13 +23,14 @@ pip install -r requirements.txt
 ```
 
 #### 2. Установка NgSpice для PySpice
+
 PySpice по умолчанию требует NgSpice как разделяемую библиотеку. NgSpice в свою очередь в репозитории такую библиотеку не поставляет.
 
 Поэтому скачиваем руками:
 
 * Переходим на [сайт](https://sourceforge.net/projects/ngspice/files/ng-spice-rework/old-releases/34/)
 * Скачиваем файл `ngspice-34_dll_64.zip` (ждём 5 секунд)
-* Распаковываем из архива папку `Spice64_dll`  в `venv\Lib\site-packages\PySpice\Spice\NgSpice`
+* Распаковываем из архива папку `Spice64_dll` в `venv\Lib\site-packages\PySpice\Spice\NgSpice`
 
 Далее переходим в подпапку распакованной папки, создаём symlink (от администратора):
 
