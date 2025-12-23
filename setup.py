@@ -19,7 +19,7 @@ setup(name="ivc-circuit-detector",
           'numpy; python_version>"3.6"',
           "scikit-learn==0.24.2",
           "scipy",
-          "epcore @ git+https://github.com/EPC-MSU/epcore@dev-0.2#egg=epcore"
+          # "epcore @ git+https://github.com/EPC-MSU/epcore@dev-0.2#egg=epcore"
       ],
       classifiers=[
             "Programming Language :: Python :: 3",
