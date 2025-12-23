@@ -5,13 +5,13 @@ This module provides the machine learning classifier for circuit type recognitio
 and related functions for training, inference, and model persistence.
 """
 
+import pickle
+from pathlib import Path
 from typing import Dict, List, Union, Optional, Any, Tuple
 import numpy as np
-from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
 from sklearn.utils.class_weight import compute_class_weight
-import pickle
 
 from .features import CircuitFeatures, extract_features_from_uzf
 

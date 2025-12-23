@@ -13,13 +13,16 @@ setup(name="ivc-circuit-detector",
       author_email="zap@physlab.ru",
       license="CC0-1.0",
       packages=["circuit_detector"],
+      python_requires=">=3.6",
       install_requires=[
-            "",  # YOUR DEPENDENCIES ARE HERE
+          "numpy==1.18.1",
+          "scikit-learn==0.24.2",
+          "scipy",
+          "epcore @ git+https://github.com/EPC-MSU/epcore#egg=epcore"
       ],
       classifiers=[
             "Programming Language :: Python :: 3",
             "License :: OSI Approved :: CC0 License",
             "Operating System :: OS Independent",
       ],
-      python_requires=">=3.6",
       zip_safe=False)

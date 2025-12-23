@@ -5,11 +5,11 @@ This module provides functionality for extracting features from I-V curve data
 and managing CircuitFeatures objects for machine learning classification.
 """
 
-from typing import List, Any, Union
-from collections import OrderedDict
-import numpy as np
 import re
+from collections import OrderedDict
 from pathlib import Path
+from typing import List, Any, Union
+import numpy as np
 from epcore.filemanager.ufiv import load_board_from_ufiv
 
 
