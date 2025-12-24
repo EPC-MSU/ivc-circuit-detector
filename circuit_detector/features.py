@@ -199,14 +199,31 @@ def extract_features_from_uzf(uzf_path: Union[str, Path]) -> CircuitFeatures:
         measurement_obj = measurement.elements[0].pins[0].measurements[0]
         measurement_settings = measurement_obj.settings
         iv_curve = measurement_obj.ivc
-        return extract_features_from_signature(iv_curve, measurement_settings, comment)
+        return extract_features_from_iv_curve(iv_curve, measurement_settings, comment)
 
     except Exception as e:
         raise ValueError(f"Error reading UZF file {uzf_path}: {str(e)}")
 
 
-def extract_features_from_signature(iv_curve: IVCurve, measurement_settings: MeasurementSettings,
-                                    comment: Optional[str] = "") -> CircuitFeatures:
+def extract_features_from_iv_curve(iv_curve: IVCurve, measurement_settings: MeasurementSettings,
+                                   comment: Optional[str] = "") -> CircuitFeatures:
+    """
+    Extract machine learning features from I-V curve data.
+
+    This function extracts relevant features from the I-V curve data
+    that can be used for circuit classification.
+
+    Args:
+        iv_curve: I-V curve data
+        measurement_settings: measurement settings at which I-V curve data obtained
+        comment: comment to I-V curve data
+
+    Returns:
+        CircuitFeatures object containing extracted features
+
+    Raises:
+        ValueError: If I-V curve data is invalid
+    """
     voltages = np.array(iv_curve.voltages)
     currents = np.array(iv_curve.currents)
 

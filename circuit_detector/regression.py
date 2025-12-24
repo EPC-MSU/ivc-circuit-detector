@@ -39,6 +39,7 @@ def detect_parameters(circuit_features: CircuitFeatures) -> Dict[str, float]:
 
     Raises:
         ValueError: If class_name is empty or not recognized
+        NotImplementedError: The circuit parameter retrieval function is not implemented for class_name
     """
     class_name = circuit_features.class_name
 
@@ -54,15 +55,15 @@ def detect_parameters(circuit_features: CircuitFeatures) -> Dict[str, float]:
     # Apply the appropriate algorithm based on the group
     if group == "simple_rc":
         return _detect_simple_rc_parameters(circuit_features)
-    elif group == "diodes_resistors":
+    if group == "diodes_resistors":
         return _detect_diodes_resistors_parameters(circuit_features)
-    elif group == "unresolvable_rc":
+    if group == "unresolvable_rc":
         raise NotImplementedError(
             f"Parameter detection algorithm for group '{group}' seems to be impossible to implement."
         )
-    elif group == "not_yet":
+    if group == "not_yet":
         raise NotImplementedError(f"Parameter detection algorithm for group '{group}' is not yet implemented")
-    elif group == "not_yet_complex":
+    if group == "not_yet_complex":
         raise NotImplementedError(f"Parameter detection algorithm for group '{group}' is not yet implemented")
 
     raise NotImplementedError(f"Unknown group '{group}'")
