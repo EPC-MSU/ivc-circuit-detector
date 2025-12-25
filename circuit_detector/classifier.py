@@ -595,7 +595,6 @@ def predict_circuit_class_for_features(features: CircuitFeatures, classifier: Ci
 
     # Step 3: Get class name from class_id
     class_name = classifier.classes_[class_id]
-    features.class_name = class_name
 
     # Step 4: Calculate confidence as the highest probability
     confidence = float(np.max(probabilities))
