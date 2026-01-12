@@ -1,12 +1,9 @@
 from setuptools import setup
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
 
 setup(name="ivc-circuit-detector",
       version="0.2.1",
       description="Detect circuit schema related to I-V curve",
-      long_description=long_description,
       long_description_content_type="text/markdown",
       url="https://github.com/EPC-MSU/ivc-circuit-detector",
       author="EPC MSU",
