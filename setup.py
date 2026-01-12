@@ -2,7 +2,7 @@ from setuptools import setup
 
 
 setup(name="ivc-circuit-detector",
-      version="0.2.1",
+      version="0.2.2",
       description="Detect circuit schema related to I-V curve",
       long_description_content_type="text/markdown",
       url="https://github.com/EPC-MSU/ivc-circuit-detector",
