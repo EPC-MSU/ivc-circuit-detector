@@ -28,17 +28,28 @@ class SimulatorIVC:
                        frequency=self.measurement_settings["probe_signal_frequency"])
 
         period = 1 / self.measurement_settings["probe_signal_frequency"]
-
-        step_time = period / (ssr / self.measurement_settings["probe_signal_frequency"])
+        hardware_points = int(ssr / self.measurement_settings["probe_signal_frequency"])
+        hardware_step_time = period / hardware_points
         end_time = period + self.measurement_settings["precharge_delay"]
+        last_period_start = end_time - period
 
         simulator = circuit.simulator()
-        analysis = simulator.transient(step_time=step_time, end_time=end_time)
+        simulator.transient(step_time=hardware_step_time, end_time=end_time)
 
-        need_points = int(ssr / self.measurement_settings["probe_signal_frequency"]) - 1
+        # Use NGSpice linearize to resample adaptive-step output onto a uniform time grid
+        # covering exactly the last signal period at hardware sampling resolution.
+        ngspice = simulator.ngspice
+        ngspice.exec_command("let lin-tstart = {:.15g}".format(last_period_start))
+        ngspice.exec_command("let lin-tstop = {:.15g}".format(end_time))
+        ngspice.exec_command("let lin-tstep = {:.15g}".format(hardware_step_time))
+        ngspice.exec_command("linearize")
 
-        voltages = analysis.input[-need_points:].as_ndarray()
-        currents = analysis.VCurrent[-need_points:].as_ndarray()
+        lin_plot = ngspice.plot(simulator, ngspice.last_plot)
+        lin_analysis = lin_plot.to_analysis()
+
+        need_points = hardware_points - 1
+        voltages = np.array(lin_analysis.input[:need_points])
+        currents = np.array(lin_analysis.VCurrent[:need_points])
 
         voltages = np.append(voltages, voltages[0])  # Close points circle
         currents = np.append(currents, currents[0])  # Close points circle
