@@ -262,7 +262,7 @@ class CircuitClassifier:
 
         # Step 4: Create results dictionary
         results = {
-            "accuracy": float(accuracy),
+            "accuracy": accuracy,
             "precision_macro": float(precision_macro),
             "recall_macro": float(recall_macro),
             "f1_macro": float(f1_macro),
@@ -270,10 +270,10 @@ class CircuitClassifier:
             "recall_weighted": float(recall_weighted),
             "f1_weighted": float(f1_weighted),
             "per_class_metrics": {
-                "precision": precision.tolist(),
-                "recall": recall.tolist(),
-                "f1": f1.tolist(),
-                "support": support.tolist()
+                "precision": precision,
+                "recall": recall,
+                "f1": f1,
+                "support": support
             },
             "confusion_matrix": cm.tolist(),
             "processed_files": len(y_true),
@@ -507,8 +507,9 @@ def train_classifier(dataset_dir: Union[str, Path],
         }
 
     # Log class weights
-    if model_params["class_weight"] != "balanced":
+    if "class_weight" in model_params and model_params["class_weight"] != "balanced":
         raise ValueError("Must use balanced class_weights with embedded tuning. Rewrite the code otherwise.")
+    # Otherwise we have default of balanced class weights, can continue
     class_weights = compute_class_weight(
         class_weight="balanced",
         classes=np.unique(y),
