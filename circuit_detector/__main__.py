@@ -33,6 +33,8 @@ def train_command(args):
         # Parse model parameters from command line (format: key=value,key=value)
         for param in args.model_params.split(","):
             key, value = param.split("=")
+            key = key.strip()
+            value = value.strip()
             try:
                 # Try to convert to number if possible
                 model_params[key] = float(value) if "." in value else int(value)
