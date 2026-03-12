@@ -49,10 +49,26 @@ class ParametersChanger:
         self._settings = self._generate_intervals(self._filter_settings(self._params_settings))
         self._assist_settings = self._make_assist_settings()
 
-        # Extract filter settings with defaults
-        filter_settings = self._params_settings.get("filter", {})
-        self.bounds_extension_percentage = filter_settings.get("bounds_extension_percentage", 10.0)
-        self.min_difference_threshold = filter_settings.get("min_difference_threshold", 0.05)
+        # Extract filter settings - both keys are mandatory, no defaults
+        if "filter" not in self._params_settings:
+            raise KeyError(
+                "Missing required 'filter' section in parameters settings. "
+                "Add 'filter' with 'bounds_extension_percentage' and 'min_difference_threshold' "
+                "to parameters_variations.json."
+            )
+        filter_settings = self._params_settings["filter"]
+        if "bounds_extension_percentage" not in filter_settings:
+            raise KeyError(
+                "Missing required 'bounds_extension_percentage' in the 'filter' section "
+                "of parameters_variations.json."
+            )
+        if "min_difference_threshold" not in filter_settings:
+            raise KeyError(
+                "Missing required 'min_difference_threshold' in the 'filter' section "
+                "of parameters_variations.json."
+            )
+        self.bounds_extension_percentage = filter_settings["bounds_extension_percentage"]
+        self.min_difference_threshold = filter_settings["min_difference_threshold"]
 
     def generate_circuits(self) -> None:
         """
