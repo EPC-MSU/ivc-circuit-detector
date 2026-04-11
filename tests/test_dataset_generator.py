@@ -2,93 +2,97 @@
 Tests for dataset generation functionality.
 """
 
+import argparse
+import json
+import os
+import shutil
+import tempfile
 import unittest
-from unittest.mock import patch, MagicMock
-from generate_dataset.dataset_generator import generate_dataset
+
+from generate_dataset.dataset_generator import _process_single_circuit
+from generate_dataset.parameters_changer import ParametersChanger
+from generate_dataset.simulator_ivc import SimulatorIVC
+
+PARAMETERS_SETTINGS_PATH = "generate_dataset/parameters_variations.json"
+MEASUREMENTS_SETTINGS_PATH = "generate_dataset/measurement_settings.json"
+BASE_CLASSES_FOLDER = "circuit_classes"
 
 
-class TestDatasetGenerator(unittest.TestCase):
-    """Test dataset generation with filtering options."""
+class TestFilteringBehavior(unittest.TestCase):
+    """Integration tests for the disable_filtering parameter in _process_single_circuit.
 
-    @patch("generate_dataset.dataset_generator.glob.glob")
-    @patch("generate_dataset.dataset_generator.open")
-    @patch("generate_dataset.dataset_generator.ParametersChanger")
-    @patch("generate_dataset.dataset_generator.SimulatorIVC")
-    def test_generate_dataset_with_filtering_enabled(self, mock_simulator, mock_changer_class, mock_open, mock_glob):
-        """Test that filtering is applied when disable_filtering=False (default)."""
-        # Setup mocks
-        mock_glob.return_value = ["circuit_classes/R"]
+    Uses the R class (one parameter, simplest circuit) to run real NgSpice simulations.
+    Sets min_difference_threshold=0.99 to make filtering deterministic: any R circuit
+    compared against its ±30%-extended boundary returns a similarity score well below
+    0.99 (the circuits are similar resistors), so the filter always triggers when enabled.
+    """
 
-        # Mock JSON files
-        mock_params_file = MagicMock()
-        mock_params_file.__enter__.return_value.read.return_value = '{"elements": {}}'
-        mock_measurements_file = MagicMock()
-        mock_measurements_file.__enter__.return_value.read.return_value = \
-            '{"variants": [{"enabled": true, "name": "test", "noise_settings": ' \
-            '{"without_noise": true, "with_noise_copies": 0}}]}'
+    @classmethod
+    def setUpClass(cls):
+        with open(PARAMETERS_SETTINGS_PATH, "r") as f:
+            cls.parameters_settings = json.load(f)
+        with open(MEASUREMENTS_SETTINGS_PATH, "r") as f:
+            measurements_settings = json.load(f)
 
-        mock_open.return_value = mock_params_file
+        cls.measurement_variant = next(
+            v for v in measurements_settings["variants"] if v.get("enabled", False)
+        )
+        cls.cls_name = "R"
+        cls.cir_path = os.path.join(BASE_CLASSES_FOLDER, cls.cls_name, cls.cls_name + ".cir")
+        cls.scheme_png_path = os.path.join(BASE_CLASSES_FOLDER, cls.cls_name, cls.cls_name + ".png")
 
-        # Mock ParametersChanger
-        mock_changer = MagicMock()
-        mock_changer.circuits = [MagicMock()]
-        mock_changer._get_params_combinations.return_value = [{}]
-        mock_changer.generate_bound_circuits_with_params.return_value = []
-        mock_changer.min_difference_threshold = 0.01
-        mock_changer_class.return_value = mock_changer
+        cls.changer = ParametersChanger(cls.cir_path, cls.parameters_settings)
+        cls.changer.generate_circuits()
+        cls.simulator = SimulatorIVC(cls.measurement_variant)
+        cls.params_combinations = cls.changer._get_params_combinations(cls.changer._settings)
+        cls.original_threshold = cls.changer.min_difference_threshold
 
-        # Mock SimulatorIVC
-        mock_sim = MagicMock()
-        mock_sim.get_ivc.return_value = MagicMock()
-        mock_sim.compare_ivc.return_value = 0.5  # Above threshold
-        mock_simulator.return_value = mock_sim
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        # High threshold guarantees filtering triggers for any R circuit vs its boundary
+        self.changer.min_difference_threshold = 0.99
 
-        # Call with filtering enabled (default)
-        with patch("builtins.open", mock_open):
-            with patch("json.load") as mock_json_load:
-                mock_json_load.side_effect = [
-                    {"elements": {}},
-                    {"variants": [{"enabled": True, "name": "test",
-                                   "noise_settings": {"without_noise": True, "with_noise_copies": 0}}]}
-                ]
-                generate_dataset(save_png=False, dataset_dir="test_dataset", disable_filtering=False)
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        self.changer.min_difference_threshold = self.original_threshold
 
-        # Verify that generate_bound_circuits_with_params was called (filtering enabled)
-        mock_changer.generate_bound_circuits_with_params.assert_called()
+    def _make_circuit(self):
+        """Return a fresh circuit clone for the first R parameter combination.
 
-    @patch("generate_dataset.dataset_generator.glob.glob")
-    @patch("generate_dataset.dataset_generator.open")
-    @patch("generate_dataset.dataset_generator.ParametersChanger")
-    @patch("generate_dataset.dataset_generator.SimulatorIVC")
-    def test_generate_dataset_with_filtering_disabled(self, mock_simulator, mock_changer_class, mock_open, mock_glob):
-        """Test that filtering is skipped when disable_filtering=True."""
-        # Setup mocks
-        mock_glob.return_value = ["circuit_classes/R"]
+        A fresh clone is required on each call because get_ivc mutates the circuit
+        by adding Rcs and AcLineCurrent elements to it.
+        """
+        params = self.params_combinations[0]
+        circuit = self.changer._params_combination_to_circuit(params)
+        return circuit, params
 
-        # Mock ParametersChanger
-        mock_changer = MagicMock()
-        mock_changer.circuits = [MagicMock()]
-        mock_changer._get_params_combinations.return_value = [{}]
-        mock_changer.generate_bound_circuits_with_params.return_value = []
-        mock_changer_class.return_value = mock_changer
+    def test_filtering_disabled_saves_circuit(self):
+        """With disable_filtering=True the circuit file is always written, even when
+        the threshold (0.99) would have caused it to be filtered."""
+        circuit, params = self._make_circuit()
 
-        # Mock SimulatorIVC
-        mock_sim = MagicMock()
-        mock_sim.get_ivc.return_value = MagicMock()
-        mock_simulator.return_value = mock_sim
+        _process_single_circuit(
+            circuit, params, 0, self.cls_name,
+            self.changer, self.simulator, self.measurement_variant,
+            self.tmpdir, self.scheme_png_path, False, disable_filtering=True
+        )
 
-        # Call with filtering disabled
-        with patch("builtins.open", mock_open):
-            with patch("json.load") as mock_json_load:
-                mock_json_load.side_effect = [
-                    {"elements": {}},
-                    {"variants": [{"enabled": True, "name": "test",
-                                   "noise_settings": {"without_noise": True, "with_noise_copies": 0}}]}
-                ]
-                generate_dataset(save_png=False, dataset_dir="test_dataset", disable_filtering=True)
+        uzf_files = [f for f in os.listdir(self.tmpdir) if f.endswith(".uzf")]
+        self.assertEqual(len(uzf_files), 1)
 
-        # Verify that generate_bound_circuits_with_params was NOT called (filtering disabled)
-        mock_changer.generate_bound_circuits_with_params.assert_not_called()
+    def test_filtering_enabled_removes_circuit(self):
+        """With disable_filtering=False and threshold=0.99 the circuit is filtered out
+        because any R circuit is similar enough to its ±30% boundary circuit."""
+        circuit, params = self._make_circuit()
+
+        _process_single_circuit(
+            circuit, params, 0, self.cls_name,
+            self.changer, self.simulator, self.measurement_variant,
+            self.tmpdir, self.scheme_png_path, False, disable_filtering=False
+        )
+
+        uzf_files = [f for f in os.listdir(self.tmpdir) if f.endswith(".uzf")]
+        self.assertEqual(len(uzf_files), 0)
 
 
 class TestDatasetGeneratorCLI(unittest.TestCase):
@@ -96,9 +100,6 @@ class TestDatasetGeneratorCLI(unittest.TestCase):
 
     def test_cli_with_disable_filtering_flag(self):
         """Test that --disable-filtering flag is properly parsed and passed to generate_dataset."""
-        import argparse
-
-        # Create parser like in __main__.py
         parser = argparse.ArgumentParser(description="Generate dataset from `circuit_classes` to output folder")
         parser.add_argument("-i", "--image", action="store_true", help="Add IVC-png-image to each dataset file")
         parser.add_argument("--dataset-dir", default="dataset",
@@ -106,18 +107,11 @@ class TestDatasetGeneratorCLI(unittest.TestCase):
         parser.add_argument("--disable-filtering", action="store_true",
                             help="Disable boundary condition filtering")
 
-        # Simulate command line with --disable-filtering
-        test_args = ["--disable-filtering"]
-        args = parser.parse_args(test_args)
-
-        # Verify the flag is parsed correctly
+        args = parser.parse_args(["--disable-filtering"])
         self.assertTrue(args.disable_filtering)
 
     def test_cli_without_disable_filtering_flag(self):
         """Test that filtering is enabled by default when --disable-filtering is not provided."""
-        import argparse
-
-        # Create parser like in __main__.py
         parser = argparse.ArgumentParser(description="Generate dataset from `circuit_classes` to output folder")
         parser.add_argument("-i", "--image", action="store_true", help="Add IVC-png-image to each dataset file")
         parser.add_argument("--dataset-dir", default="dataset",
@@ -125,11 +119,7 @@ class TestDatasetGeneratorCLI(unittest.TestCase):
         parser.add_argument("--disable-filtering", action="store_true",
                             help="Disable boundary condition filtering")
 
-        # Simulate command line without --disable-filtering
-        test_args = []
-        args = parser.parse_args(test_args)
-
-        # Verify the flag defaults to False (filtering enabled)
+        args = parser.parse_args([])
         self.assertFalse(args.disable_filtering)
 
 

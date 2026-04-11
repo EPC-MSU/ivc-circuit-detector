@@ -1,9 +1,41 @@
 import glob
 import json
+import multiprocessing
 import os
 
 from generate_dataset.parameters_changer import ParametersChanger
 from generate_dataset.simulator_ivc import SimulatorIVC
+
+# Module-level state for worker processes (set by _worker_init, one copy per process)
+_WORKER_CHANGER = None
+_WORKER_SIMULATOR = None
+_WORKER_MEASUREMENT_VARIANT = None
+
+
+def _worker_init(cir_path, params_settings, measurement_variant):
+    """Initialize per-worker ParametersChanger and SimulatorIVC.
+
+    Called once when each worker process starts. Avoids pickling Circuit objects
+    across the process boundary by reconstructing them inside each worker.
+    """
+    global _WORKER_CHANGER, _WORKER_SIMULATOR, _WORKER_MEASUREMENT_VARIANT
+    _WORKER_CHANGER = ParametersChanger(cir_path, params_settings)
+    _WORKER_CHANGER.generate_circuits()
+    _WORKER_SIMULATOR = SimulatorIVC(measurement_variant)
+    _WORKER_MEASUREMENT_VARIANT = measurement_variant
+
+
+def _parallel_process_circuit(task):
+    """Worker entry point for parallel circuit processing.
+
+    Receives only picklable data; reconstructs the Circuit object inside the
+    worker process using the per-process ParametersChanger created by _worker_init.
+    """
+    params_combination, index, cls, output_path, scheme_png_path, save_png, disable_filtering = task
+    circuit = _WORKER_CHANGER._params_combination_to_circuit(params_combination)
+    _process_single_circuit(circuit, params_combination, index, cls,
+                            _WORKER_CHANGER, _WORKER_SIMULATOR, _WORKER_MEASUREMENT_VARIANT,
+                            output_path, scheme_png_path, save_png, disable_filtering)
 
 BASE_CLASSES_FOLDER = "circuit_classes"
 PARAMETERS_SETTINGS_PATH = "generate_dataset\\parameters_variations.json"
@@ -147,7 +179,7 @@ def _process_single_circuit(circuit, params_combination, index, cls, changer, si
                   f"{changer.min_difference_threshold}) to boundary circuit {_format_params(similar_bound_params)}")
 
 
-def generate_dataset(save_png=False, dataset_dir=None, disable_filtering=False):
+def generate_dataset(save_png=False, dataset_dir=None, disable_filtering=False, num_workers=None):
     """
     Generate dataset from circuit classes.
 
@@ -155,9 +187,12 @@ def generate_dataset(save_png=False, dataset_dir=None, disable_filtering=False):
         save_png: Whether to save PNG images for each dataset file
         dataset_dir: Output directory for dataset (default: "dataset")
         disable_filtering: If True, skip boundary condition filtering (default: False)
+        num_workers: Number of parallel worker processes (default: os.cpu_count())
     """
     if dataset_dir is None:
         dataset_dir = DEFAULT_DATASET_FOLDER
+    if num_workers is None:
+        num_workers = os.cpu_count()
 
     with open(PARAMETERS_SETTINGS_PATH, "r") as f:
         parameters_settings = json.load(f)
@@ -183,13 +218,17 @@ def generate_dataset(save_png=False, dataset_dir=None, disable_filtering=False):
             changer.generate_circuits()
             changer.dump_circuits_on_disk(output_path)
 
-            # Create a simulator for the measurement settings
-            simulator = SimulatorIVC(measurement_variant)
-
             # Get parameter combinations for all circuits
             params_combinations = changer._get_params_combinations(changer._settings)
 
-            for i, (circuit, params_combination) in enumerate(zip(changer.circuits, params_combinations)):
-                _process_single_circuit(circuit, params_combination, i, cls, changer, simulator,
-                                        measurement_variant, output_path, scheme_png_path,
-                                        save_png, disable_filtering)
+            tasks = [
+                (params_combination, i, cls, output_path, scheme_png_path, save_png, disable_filtering)
+                for i, params_combination in enumerate(params_combinations)
+            ]
+
+            with multiprocessing.Pool(
+                processes=num_workers,
+                initializer=_worker_init,
+                initargs=(cir_path, parameters_settings, measurement_variant),
+            ) as pool:
+                pool.map(_parallel_process_circuit, tasks)

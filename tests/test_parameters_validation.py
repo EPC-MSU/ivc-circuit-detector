@@ -58,7 +58,6 @@ class TestParametersValidation(unittest.TestCase):
         # Should validate successfully
         jsonschema.validate(test_single_element, schema)
 
-
     def _base_valid_config(self):
         return {
             "title": "Test",

@@ -6,23 +6,29 @@
 
 **Пошаговые инструкции** располагаются в папке [./docs](./docs), но сначала выполните установку ниже.
 
-### Установка на Windows
+## Установка на Windows
 
-#### 1. Установка зависимостей
+### 1. Установка зависимостей
 
 Строго [Python 3.6.8 x64](https://www.python.org/downloads/release/python-368/)
 
 Запустить консоль от имени администратора.
 
-Перейти в корень этого репозитория и создать виртуальное окружение (путь к питону 3.6.8 может отличаться):
+Перейти в корень этого репозитория и создать виртуальное окружение, а также внести нужные патчи. 
+Ваш путь к питону 3.6.8 может отличаться. Если это так, то впишите его вместо `python`:
 
 ```commandline
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
+scripts\install_ngspice.bat
 ```
 
-#### 2. Установка NgSpice для PySpice
+### 2. Ручной патч NgSpice
+
+Ручной метод заменяет скрипт `install_ngspice.bat`. То есть выполнять эти пункты не требуется.
+
+#### 1. Установка NgSpice для PySpice
 
 PySpice по умолчанию требует NgSpice как разделяемую библиотеку. NgSpice в свою очередь в репозитории такую библиотеку не поставляет.
 
@@ -39,7 +45,7 @@ cd venv\Lib\site-packages\PySpice\Spice\NgSpice\Spice64_dll\dll-vs
 mklink ngspice.dll ngspice-34.dll
 ```
 
-#### 3. Фикс бага в PySpice
+#### 2. Фикс бага в PySpice
 
 Открываем файл `venv\Lib\site-packages\PySpice\Spice\Netlist.py`, находим 165 строку (класс DeviceModel метод clone) и меняем
 
@@ -49,11 +55,11 @@ mklink ngspice.dll ngspice-34.dll
 стало:
 `return self.__class__(self._name, self._model_type, **self._parameters)`
 
-#### 4. Протестировать установку на корректность
+### 3. Протестировать установку на корректность
 
 На этом установка завершена, далее можно сгенерировать датасет, согласно пункту 3.2 в файле [docs/3_Generate_dataset.md](docs/3_Generate_dataset.md)
 
-#### 5. Выпуск whl-файла
+### 4. Выпуск whl-файла
 
 * Откройте для редактирования файл `setup.py`.
 * В файле `setup.py` раскомментируйте строчку с модулем `epcore` в списке `install_requires`.
