@@ -1,0 +1,7 @@
+cd ..
+set PYTHON=python
+if exist venv rd /S /Q venv
+%PYTHON% -m venv venv
+venv\Scripts\python -m pip install --upgrade pip
+venv\Scripts\python -m pip install setuptools wheel
+venv\Scripts\python setup.py sdist bdist_wheel

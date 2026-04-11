@@ -59,5 +59,59 @@ class TestParametersValidation(unittest.TestCase):
         jsonschema.validate(test_single_element, schema)
 
 
+    def _base_valid_config(self):
+        return {
+            "title": "Test",
+            "description": "Test",
+            "version": "1.0.0",
+            "filter": {
+                "bounds_extension_percentage": 10.0,
+                "min_difference_threshold": 0.05
+            },
+            "elements": {
+                "R": [{
+                    "_name": "resistance",
+                    "_units": "Ohm",
+                    "cir_key": None,
+                    "cir_unit": "Ohm",
+                    "nominal": {"type": "list", "value": [1.0]}
+                }]
+            }
+        }
+
+    def test_missing_filter_section_fails_validation(self):
+        """Test that config without 'filter' section fails schema validation."""
+        test_data = self._base_valid_config()
+        del test_data["filter"]
+
+        with open(self.schema_file, "r") as f:
+            schema = json.load(f)
+
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(test_data, schema)
+
+    def test_missing_bounds_extension_percentage_fails_validation(self):
+        """Test that filter without 'bounds_extension_percentage' fails schema validation."""
+        test_data = self._base_valid_config()
+        del test_data["filter"]["bounds_extension_percentage"]
+
+        with open(self.schema_file, "r") as f:
+            schema = json.load(f)
+
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(test_data, schema)
+
+    def test_missing_min_difference_threshold_fails_validation(self):
+        """Test that filter without 'min_difference_threshold' fails schema validation."""
+        test_data = self._base_valid_config()
+        del test_data["filter"]["min_difference_threshold"]
+
+        with open(self.schema_file, "r") as f:
+            schema = json.load(f)
+
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(test_data, schema)
+
+
 if __name__ == "__main__":
     unittest.main()

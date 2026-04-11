@@ -5,15 +5,16 @@ This module provides the machine learning classifier for circuit type recognitio
 and related functions for training, inference, and model persistence.
 """
 
+import pickle
+from pathlib import Path
 from typing import Dict, List, Union, Optional, Any, Tuple
 import numpy as np
-from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
 from sklearn.utils.class_weight import compute_class_weight
-import pickle
+from epcore.elements import IVCurve, MeasurementSettings
 
-from .features import CircuitFeatures, extract_features_from_uzf
+from .features import CircuitFeatures, extract_features_from_uzf, extract_features_from_iv_curve
 
 
 class CircuitClassifier:
@@ -48,6 +49,9 @@ class CircuitClassifier:
 
         Returns:
             Class number representing the predicted circuit type
+
+        Raises:
+            ValueError: If classifier is not trained
         """
         if not self._trained:
             raise ValueError("Classifier must be trained before making predictions")
@@ -64,6 +68,9 @@ class CircuitClassifier:
 
         Returns:
             Array of probabilities for each class
+
+        Raises:
+            ValueError: If classifier is not trained
         """
         if not self._trained:
             raise ValueError("Classifier must be trained before making predictions")
@@ -255,7 +262,7 @@ class CircuitClassifier:
 
         # Step 4: Create results dictionary
         results = {
-            "accuracy": float(accuracy),
+            "accuracy": accuracy,
             "precision_macro": float(precision_macro),
             "recall_macro": float(recall_macro),
             "f1_macro": float(f1_macro),
@@ -263,10 +270,10 @@ class CircuitClassifier:
             "recall_weighted": float(recall_weighted),
             "f1_weighted": float(f1_weighted),
             "per_class_metrics": {
-                "precision": precision.tolist(),
-                "recall": recall.tolist(),
-                "f1": f1.tolist(),
-                "support": support.tolist()
+                "precision": precision,
+                "recall": recall,
+                "f1": f1,
+                "support": support
             },
             "confusion_matrix": cm.tolist(),
             "processed_files": len(y_true),
@@ -500,8 +507,9 @@ def train_classifier(dataset_dir: Union[str, Path],
         }
 
     # Log class weights
-    if model_params["class_weight"] != "balanced":
+    if "class_weight" in model_params and model_params["class_weight"] != "balanced":
         raise ValueError("Must use balanced class_weights with embedded tuning. Rewrite the code otherwise.")
+    # Otherwise we have default of balanced class weights, can continue
     class_weights = compute_class_weight(
         class_weight="balanced",
         classes=np.unique(y),
@@ -549,7 +557,9 @@ def predict_circuit_class(uzf_path: Union[str, Path],
             - "class_name": Predicted class name
             - "confidence": Prediction confidence score
             - "probabilities": Full probability distribution
+            - "feature_count": Number of extracted features in CircuitFeature object
             - "features": CircuitFeatures object with extracted features
+            - "uzf_path":
 
     Raises:
         FileNotFoundError: If UZF file doesn't exist
@@ -558,6 +568,28 @@ def predict_circuit_class(uzf_path: Union[str, Path],
     # Step 1: Extract features from UZF file
     features = extract_features_from_uzf(uzf_path)
 
+    # Steps 2-5
+    result = predict_circuit_class_for_features(features, classifier)
+    result["uzf_path"] = str(uzf_path)
+
+    return result
+
+
+def predict_circuit_class_for_features(features: CircuitFeatures, classifier: CircuitClassifier) -> Dict[str, Any]:
+    """
+    Args:
+        features: CircuitFeatures object containing extracted features
+        classifier: Trained CircuitClassifier instance
+
+    Returns:
+        Dictionary containing:
+            - "class_id": Predicted class number
+            - "class_name": Predicted class name
+            - "confidence": Prediction confidence score
+            - "probabilities": Full probability distribution
+            - "feature_count": Number of extracted features in CircuitFeature object
+            - "features": CircuitFeatures object with extracted features
+    """
     # Step 2: Get prediction and probabilities
     class_id = classifier.predict(features)
     probabilities = classifier.predict_proba(features)
@@ -569,14 +601,44 @@ def predict_circuit_class(uzf_path: Union[str, Path],
     confidence = float(np.max(probabilities))
 
     # Step 5: Create comprehensive result dictionary
-    result = {
+    return {
         "class_id": int(class_id),
         "class_name": class_name,
         "confidence": confidence,
         "probabilities": probabilities.tolist(),
         "feature_count": len(features.feature_vector),
-        "uzf_path": str(uzf_path),
         "features": features
     }
 
-    return result
+
+def predict_circuit_class_for_iv_curve(iv_curve: IVCurve, measurement_settings: MeasurementSettings,
+                                       classifier: CircuitClassifier, comment: Optional[str] = "") -> Dict[str, Any]:
+    """
+    Complete pipeline function: extract features and predict circuit class.
+
+    This is a convenience function that combines feature extraction and inference
+    in a single call.
+
+    Args:
+        iv_curve: I-V curve data
+        measurement_settings: Settings at which the signature was measured
+        classifier: Trained CircuitClassifier instance
+        comment: comment to I-V curve data
+
+    Returns:
+        Dictionary containing:
+            - "class_id": Predicted class number
+            - "class_name": Predicted class name
+            - "confidence": Prediction confidence score
+            - "probabilities": Full probability distribution
+            - "feature_count": Number of extracted features in CircuitFeature object
+            - "features": CircuitFeatures object with extracted features
+
+    Raises:
+        ValueError: Classifier not trained
+    """
+    # Step 1: Extract features from UZF file
+    features = extract_features_from_iv_curve(iv_curve, measurement_settings, comment)
+
+    # Steps 2-5
+    return predict_circuit_class_for_features(features, classifier)

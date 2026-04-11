@@ -112,20 +112,17 @@ class SimulatorIVC:
     def get_ivc(self, circuit: Circuit):
         rms_voltage = self.measurement_settings["max_voltage"] / np.sqrt(2)
 
-        # ssr = simulator sampling rate
-        ssr = self.measurement_settings["sampling_rate"]
-
+        # Adding an internal resistance to the circuit between the generator and the circuit
         internal_resistance = self.measurement_settings["internal_resistance"]
         circuit.R("cs", "input", "input_dummy", internal_resistance)
-        # circuit.C("coaxial_probes", circuit.gnd, "input_dummy", 204*10**-12)  # 28*10**-12
+        # Adding the generator
         circuit.AcLine("Current", circuit.gnd, "input_dummy", rms_voltage=rms_voltage,
                        frequency=self.measurement_settings["probe_signal_frequency"])
 
+        # Now we need to calculate the starting and the ending time of the last period
         period = 1 / self.measurement_settings["probe_signal_frequency"]
-
         # Calculate RC time constant for the circuit
         rc_time_constant = self._get_circuit_rc_time_constant(circuit, internal_resistance)
-
         # Scale precharge delay by RC time constant
         # precharge_delay_RC_times setting is in units of RC time constants
         # If no capacitors, RC = 0, so precharge = 0 regardless of setting
@@ -134,20 +131,29 @@ class SimulatorIVC:
         # Add random phase offset to precharge delay for phase randomization
         random_phase_offset = random.uniform(0, 1) * period
         total_precharge_delay = precharge_delay_seconds + random_phase_offset
-
-        step_time = period / (ssr / self.measurement_settings["probe_signal_frequency"])
+        # Calculating the number of hardware points to get out of simulation
+        # ssr = simulator sampling rate
+        ssr = self.measurement_settings["sampling_rate"]
+        hardware_points = int(ssr / self.measurement_settings["probe_signal_frequency"])
+        step_time = period / hardware_points
         end_time = total_precharge_delay + period
 
         simulator = circuit.simulator()
-        analysis = simulator.transient(step_time=step_time, end_time=end_time)
+        simulator.transient(step_time=step_time, end_time=end_time)
 
-        need_points = int(ssr / self.measurement_settings["probe_signal_frequency"]) - 1
+        # Use NGSpice linearize to resample adaptive-step output onto a uniform time grid
+        # covering exactly the last signal period at hardware sampling resolution.
+        ngspice = simulator.ngspice
+        ngspice.exec_command("let lin-tstart = {:.15g}".format(total_precharge_delay))
+        ngspice.exec_command("let lin-tstop = {:.15g}".format(end_time))
+        ngspice.exec_command("let lin-tstep = {:.15g}".format(step_time))
+        ngspice.exec_command("linearize")
 
-        voltages = analysis.input[-need_points:].as_ndarray()
-        currents = analysis.VCurrent[-need_points:].as_ndarray()
+        lin_plot = ngspice.plot(simulator, ngspice.last_plot)
+        lin_analysis = lin_plot.to_analysis()
 
-        voltages = np.append(voltages, voltages[0])  # Close points circle
-        currents = np.append(currents, currents[0])  # Close points circle
+        voltages = np.array(lin_analysis.input[:hardware_points])
+        currents = np.array(lin_analysis.VCurrent[:hardware_points])
 
         expected_points = int(
             self.measurement_settings["sampling_rate"] / self.measurement_settings["probe_signal_frequency"]

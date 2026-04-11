@@ -246,9 +246,12 @@ class UZFTestingTab(BaseTab):
 
                         self.log("Predicting circuit class...")
                         result = predict_circuit_class(uzf_path, classifier)
-                        features = result["features"]
 
-                        self.log(f"Detected Circuit Class: {features.class_name}")
+                        # Use the predicted class name from the result
+                        predicted_class_name = result["class_name"]
+                        features.class_name = predicted_class_name
+
+                        self.log(f"Detected Circuit Class: {predicted_class_name}")
                         self.log(f"Confidence: {result['confidence']:.3f}")
                         self.log("")
                         self.log("Class Probabilities:")

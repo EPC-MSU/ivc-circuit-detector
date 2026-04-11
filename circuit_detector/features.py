@@ -5,11 +5,12 @@ This module provides functionality for extracting features from I-V curve data
 and managing CircuitFeatures objects for machine learning classification.
 """
 
-from typing import List, Any, Union
-from collections import OrderedDict
-import numpy as np
 import re
+from collections import OrderedDict
 from pathlib import Path
+from typing import List, Any, Optional, Union
+import numpy as np
+from epcore.elements import IVCurve, MeasurementSettings
 from epcore.filemanager.ufiv import load_board_from_ufiv
 
 
@@ -198,23 +199,45 @@ def extract_features_from_uzf(uzf_path: Union[str, Path]) -> CircuitFeatures:
         measurement_obj = measurement.elements[0].pins[0].measurements[0]
         measurement_settings = measurement_obj.settings
         iv_curve = measurement_obj.ivc
-        voltages = np.array(iv_curve.voltages)
-        currents = np.array(iv_curve.currents)
-
-        # Validate extracted data
-        if len(voltages) == 0 or len(currents) == 0:
-            raise ValueError("UZF file contains empty voltage or current arrays")
-
-        if len(voltages) != len(currents):
-            raise ValueError(f"Voltage and current arrays have different lengths: {len(voltages)} vs {len(currents)}")
-
-        # Create CircuitFeatures with extracted data
-        return CircuitFeatures(
-            comment=comment,
-            measurement_settings=measurement_settings,
-            voltages=voltages,
-            currents=currents
-        )
+        return extract_features_from_iv_curve(iv_curve, measurement_settings, comment)
 
     except Exception as e:
         raise ValueError(f"Error reading UZF file {uzf_path}: {str(e)}")
+
+
+def extract_features_from_iv_curve(iv_curve: IVCurve, measurement_settings: MeasurementSettings,
+                                   comment: Optional[str] = "") -> CircuitFeatures:
+    """
+    Extract machine learning features from I-V curve data.
+
+    This function extracts relevant features from the I-V curve data
+    that can be used for circuit classification.
+
+    Args:
+        iv_curve: I-V curve data
+        measurement_settings: measurement settings at which I-V curve data obtained
+        comment: comment to I-V curve data
+
+    Returns:
+        CircuitFeatures object containing extracted features
+
+    Raises:
+        ValueError: If I-V curve data is invalid
+    """
+    voltages = np.array(iv_curve.voltages)
+    currents = np.array(iv_curve.currents)
+
+    # Validate extracted data
+    if len(voltages) == 0 or len(currents) == 0:
+        raise ValueError("The current or voltage array is empty")
+
+    if len(voltages) != len(currents):
+        raise ValueError(f"Voltage and current arrays have different lengths: {len(voltages)} vs {len(currents)}")
+
+    # Create CircuitFeatures with extracted data
+    return CircuitFeatures(
+        comment=comment,
+        measurement_settings=measurement_settings,
+        voltages=voltages,
+        currents=currents
+    )

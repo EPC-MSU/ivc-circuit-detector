@@ -41,6 +41,8 @@ class DatasetTab(BaseTab):
         self.dataset_dir_var = None
         self.image_var = None
         self.disable_filtering_var = None
+        self.bounds_extension_var = None
+        self.min_difference_var = None
 
         # Create the tab UI
         self.create_tab()
@@ -95,14 +97,23 @@ class DatasetTab(BaseTab):
         )
         image_checkbox.pack(anchor="w", padx=5, pady=5)
 
-        # Disable filtering checkbox
+        # Filtering section (all three controls on one line)
+        filter_frame = ttk.LabelFrame(settings_frame, text="Boundary Condition Filter")
+        filter_frame.pack(fill="x", padx=5, pady=5)
+
+        filter_row = ttk.Frame(filter_frame)
+        filter_row.pack(fill="x", padx=5, pady=5)
+
         self.disable_filtering_var = tk.BooleanVar(value=False)
-        disable_filtering_checkbox = ttk.Checkbutton(
-            settings_frame,
-            text="Disable boundary condition filtering",
-            variable=self.disable_filtering_var
-        )
-        disable_filtering_checkbox.pack(anchor="w", padx=5, pady=5)
+        ttk.Checkbutton(filter_row, text="Disable", variable=self.disable_filtering_var).pack(side="left")
+
+        ttk.Label(filter_row, text="Bounds extension (%):").pack(side="left", padx=(20, 0))
+        self.bounds_extension_var = tk.DoubleVar(value=30.0)
+        ttk.Entry(filter_row, textvariable=self.bounds_extension_var, width=8).pack(side="left", padx=(5, 0))
+
+        ttk.Label(filter_row, text="Min difference threshold:").pack(side="left", padx=(20, 0))
+        self.min_difference_var = tk.DoubleVar(value=0.03)
+        ttk.Entry(filter_row, textvariable=self.min_difference_var, width=8).pack(side="left", padx=(5, 0))
 
         # Buttons
         button_frame = ttk.Frame(self.frame)
@@ -118,6 +129,11 @@ class DatasetTab(BaseTab):
                 self.parameters_data = json.load(f)
 
             self.create_parameter_widgets()
+
+            filter_cfg = self.parameters_data.get("filter", {})
+            self.bounds_extension_var.set(filter_cfg.get("bounds_extension_percentage", 30.0))
+            self.min_difference_var.set(filter_cfg.get("min_difference_threshold", 0.03))
+
             self.log("Parameters loaded successfully")
 
         except FileNotFoundError:
@@ -196,6 +212,12 @@ class DatasetTab(BaseTab):
                     messagebox.showerror(f"Error {e}",
                                          f"Invalid value for {element_type} parameter {param_index + 1}: {value_str}")
                     return
+
+            # Save filter parameters
+            if "filter" not in self.parameters_data:
+                self.parameters_data["filter"] = {}
+            self.parameters_data["filter"]["bounds_extension_percentage"] = self.bounds_extension_var.get()
+            self.parameters_data["filter"]["min_difference_threshold"] = self.min_difference_var.get()
 
             # Save updated parameters
             with open(self.parameters_file, "w", encoding="utf-8") as f:

@@ -8,9 +8,9 @@
     "Current noise (vertical_noise) for low sensitivity is 20 microA per Volt",
     "Current noise (vertical_noise) for middle sensitivity is 1 microA per Volt",
     "Current noise (vertical_noise) for high sensitivity is 0.1 microA per Volt",
-    "Voltage noise  (horizontal_noise) is 0.005 V",
+    "Voltage noise (horizontal_noise) is 0.005 V",
     "Sampling rate for real ivm device is 100 times higher than probe_signal_frequency",
-    "with the exceprion of 100 kHz, when sampling rate is limited to 2Msps"
+    "with the exception of 100 kHz, when sampling rate is limited to 2Msps"
   ],
   "variants": [
     {

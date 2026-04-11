@@ -23,13 +23,14 @@ pip install -r requirements.txt
 ```
 
 #### 2. Установка NgSpice для PySpice
+
 PySpice по умолчанию требует NgSpice как разделяемую библиотеку. NgSpice в свою очередь в репозитории такую библиотеку не поставляет.
 
 Поэтому скачиваем руками:
 
 * Переходим на [сайт](https://sourceforge.net/projects/ngspice/files/ng-spice-rework/old-releases/34/)
 * Скачиваем файл `ngspice-34_dll_64.zip` (ждём 5 секунд)
-* Распаковываем из архива папку `Spice64_dll`  в `venv\Lib\site-packages\PySpice\Spice\NgSpice`
+* Распаковываем из архива папку `Spice64_dll` в `venv\Lib\site-packages\PySpice\Spice\NgSpice`
 
 Далее переходим в подпапку распакованной папки, создаём symlink (от администратора):
 
@@ -51,3 +52,11 @@ mklink ngspice.dll ngspice-34.dll
 #### 4. Протестировать установку на корректность
 
 На этом установка завершена, далее можно сгенерировать датасет, согласно пункту 3.2 в файле [docs/3_Generate_dataset.md](docs/3_Generate_dataset.md)
+
+#### 5. Выпуск whl-файла
+
+* Откройте для редактирования файл `setup.py`.
+* В файле `setup.py` раскомментируйте строчку с модулем `epcore` в списке `install_requires`.
+* В файле `setup.py` в поле `version` укажите корректную версию выпускаемого пакета.
+* Перейдите в папку `scripts` и запустите скрипт `release.bat`.
+* Готовый whl-файл появится в папке `dist` в корне проекта.
