@@ -62,9 +62,9 @@ class SimulatorIVC:
     def _get_circuit_rc_time_constant(circuit: Circuit, internal_resistance):
         """Calculate RC time constant for the circuit
 
-        Extracts the single capacitance from the circuit's plot_title and calculates
+        Extracts capacitances from the circuit's plot_title and calculates
         the RC time constant based on internal measurement resistance.
-        Circuits must have 0 or 1 capacitor. Multiple capacitors are not supported.
+        If multiple capacitors are present, the largest capacitance is used.
         plot_title format: "Class: [ClassName]\nC1(1u)\nR1(1k)\n..."
 
         Args:
@@ -73,9 +73,6 @@ class SimulatorIVC:
 
         Returns:
             RC time constant in seconds. Returns 0 if no capacitors found.
-
-        Raises:
-            ValueError: If more than one capacitor is found in the circuit
         """
         try:
             plot_title = circuit.plot_title
@@ -85,24 +82,15 @@ class SimulatorIVC:
             matches = re.findall(capacitor_pattern, plot_title)
 
             if len(matches) == 0:
-                # No capacitors found
                 return 0.0
-            elif len(matches) == 1:
-                # Exactly one capacitor - this is the expected case
-                try:
-                    capacitance_str = matches[0].strip()
-                    capacitance_f = SimulatorIVC._parse_spice_value(capacitance_str)
-                except (ValueError, AttributeError) as e:
-                    raise ValueError(f"Failed to parse capacitance value '{capacitance_str}': {e}")
-            else:
-                # More than one capacitor - not supported
-                raise ValueError(
-                    f"Circuit has {len(matches)} capacitors: {matches}. "
-                    "Multiple capacitors are not supported in this approach."
-                )
 
-        except (AttributeError, TypeError) as e:
-            # If plot_title doesn't exist or can't be parsed, return 0
+            capacitances = []
+            for match in matches:
+                capacitance_str = match.strip()
+                capacitances.append(SimulatorIVC._parse_spice_value(capacitance_str))
+            capacitance_f = max(capacitances)
+
+        except (AttributeError, TypeError, ValueError):
             return 0.0
 
         # RC time constant = R * C
